@@ -28,6 +28,12 @@
     <ClCompile Include="src\nodeTag.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="src\problemConfig.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\output.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\cellBox.h">
@@ -55,6 +61,12 @@
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="src\globalFuncs.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\problemConfig.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\output.h">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>
