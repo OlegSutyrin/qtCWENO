@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\cellBox.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\globalFuncs.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\quadTree.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\treeNode.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\quadTreeForest.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cellData.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\nodeEdge.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\nodeTag.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\cellBox.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\main.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\quadTree.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\treeNode.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\quadTreeForest.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cellData.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\nodeEdge.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\nodeTag.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\globalFuncs.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{09f8a45e-6511-445f-8ffa-9c0c671303cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{a5f0c2e1-3b26-47ff-9d0b-970df99654d4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.json" />
+  </ItemGroup>
+</Project>
