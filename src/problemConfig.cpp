@@ -20,11 +20,11 @@ problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
         cout << "Bad input file: " << e.what() << endl;
     }
 
-    global_box.top_left = point{ j["box"]["x min"], j["box"]["y max"] };
-    global_box.top_right = point{ j["box"]["x max"], j["box"]["y max"] };
-    global_box.bottom_right = point{ j["box"]["x max"], j["box"]["y min"] };
-    global_box.bottom_left = point{ j["box"]["x min"], j["box"]["y min"] };
-    global_box.center = middle(global_box.bottom_left, global_box.top_right);
+    global_box.setP(Quadrant::top_left, point{ j["box"]["x min"], j["box"]["y max"] });
+    global_box.setP(Quadrant::top_right, point{ j["box"]["x max"], j["box"]["y max"] });
+    global_box.setP(Quadrant::bottom_right, point{ j["box"]["x max"], j["box"]["y max"] });
+    global_box.setP(Quadrant::bottom_left, point{ j["box"]["x min"], j["box"]["y min"] });
+    global_box.updateCenter();
 
     problem = j["flow type"];
     shock_position_x = j["flow geometry"]["shock position x"];
@@ -78,10 +78,10 @@ problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
     return;
 }
 
-std::ostream& operator<<(std::ostream& os, const problemConfig& c) //config output overload
+std::ostream& operator<<(std::ostream& os, const problemConfig& c) //output overload
 {
     os << std::boolalpha; //для словесного вывода boolean'ов
-    os << "Global box: (" << c.global_box.bottom_left.x << ", " << c.global_box.bottom_left.y << ") to (" << c.global_box.top_right.x << ", " << c.global_box.top_right.y << ")" << endl;
+    os << "Global box: " << c.global_box.bottom_left() << " to " << c.global_box.top_right() << endl;
     os << "Boundary conditions: top = " << (int)config.boundary_conditions[static_cast<int>(Directions::up)] << ", right = " << (int)config.boundary_conditions[static_cast<int>(Directions::right)] << ", bottom = " << (int)config.boundary_conditions[static_cast<int>(Directions::down)] << ", left = " << (int)config.boundary_conditions[static_cast<int>(Directions::left)] << std::endl;
     os << "Problem: " << c.problem << ", gamma = " << c.gamma << ", Mach = " << c.Mach << ", Atwood = " << c.Atwood << endl;
     if (config.problem == "layer")

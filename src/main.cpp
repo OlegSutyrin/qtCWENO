@@ -14,7 +14,7 @@
 
 //глобальные объекты
 problemConfig config; //конфиг задачи
-//Globals globals; //глобальные переменные
+Globals globals; //глобальные переменные
 //quadTreeForest forest; //лес деревьев
 
 
@@ -23,19 +23,14 @@ int main(int argc, char** argv)
 {
     cout << "Starting...\n";
     auto chrono_start = std::chrono::steady_clock::now();
-
-    //std::ofstream file_output("output");
+    globals.file_output.open("output"); //output file
 
     //чтение конфига из файла
-    std::ifstream input;
-    std::string cfg_filename;
-    if (argc < 2) //если нет параметра командной строки
-        cfg_filename = "config.json";
-    else
-        cfg_filename = argv[1];
-    config = problemConfig(cfg_filename);
+    std::string cfg_filename = (argc < 2 ? "config.json" : argv[1]); //если нет параметра командной строки, читать из config.json
+    config = problemConfig(cfg_filename); //TODO: валидация конфига
     cout << config;
-    std::cin.get(); //пауза
+    globals.file_output << config;
+    //std::cin.get(); //пауза
 
 
 

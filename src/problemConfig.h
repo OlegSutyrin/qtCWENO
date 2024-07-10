@@ -5,19 +5,20 @@
 
 //compile-time константы
 const double DOUBLE_EPS10 = 1e-12; //эпсилон дл€ проверки равенства чисел типа double
-const ushorty DIRECTIONS_NUM = 4; //число кардинальных направлений системы координат
-const ushorty EQ_NUM = 4; //число уравнений
-const ushorty POLY_COEFF_NUM = 5; //число коэффициентов параболоида CWENO: px, py, pxx, pxy, pyy
-const ushorty MAX_NEIGHBOURS_NUM = 12; //число всех возможных соседей с учетом диагональных
-const ushorty TECPLOT_FIELDS_NUMBER = 2 + EQ_NUM + 3; //x,y + rho,u,v,p + Mach,level,gradrho
-const ushorty RK_ORDER_MAX = 3; //максимальный пор€док метода –унге- утты
+const int DIRECTIONS_NUM = static_cast<int>(Directions::count); //число кардинальных направлений системы координат
+const int QUADRANTS_NUM = static_cast<int>(Quadrant::count); //число вершин €чейки
+const int EQ_NUM = static_cast<int>(Equation::count); //число уравнений
+const int POLY_COEFF_NUM = 5; //число коэффициентов параболоида CWENO: px, py, pxx, pxy, pyy
+//const int MAX_NEIGHBOURS_NUM = 12; //число всех возможных соседей с учетом диагональных
+const int TECPLOT_FIELDS_NUMBER = 2 + EQ_NUM + 3; //x,y + rho,u,v,p + Mach,level,gradrho
+const int RK_ORDER_MAX = 3; //максимальный пор€док метода –унге- утты
 
 #include "cellBox.h"
 class problemConfig //runtime константы
 {
 public:
     size_t Nx = 0, Ny = 0; //число деревьев по ос€м
-    ushorty max_depth = 0; //макс глубина деревьев
+    int max_depth = 0; //макс глубина деревьев
     cellBox global_box; //глобальна€ область расчета
 
     std::string problem = "layer"; //тип течени€
@@ -54,7 +55,7 @@ public:
 
     problemConfig(); //дефолтный конструктор
     problemConfig(std::string filename); //конструктор по json-файлу
-    friend std::ostream& operator<<(std::ostream& os, const problemConfig& tag); //output overload
+    friend std::ostream& operator<<(std::ostream& os, const problemConfig& c); //output overload
 };
 
 #endif

@@ -6,6 +6,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <iomanip>
+#include <fstream>
+#include <iostream>
 
 #endif
 
