@@ -1,0 +1,63 @@
+{
+  "box": { //глобальная область расчета
+    "x min": -1.0,
+    "x max": 1.0,
+    "y min": 0.0,
+    "y max": 1.0
+  },
+
+  "coord type": "cartesian", //тип координат: "cartesian", "axisymmetric" (не работает)
+  "boundary conditions": { //граничные условия: "d/dn = zero", "wall"
+    "x min": "d/dn = zero",
+    "x max": "d/dn = zero",
+    "y min": "wall", //игнорируется для осесимметричных координат
+    "y max": "d/dn = zero"
+  },
+
+  "flow type": "bubble", //тип течения: "layer", "bubble"
+  "flow geometry": { //геометрия задачи
+    "shock position x": -0.2,
+    "bubble axles": { //полуоси пузыря (центр всегда в [0,0])
+      "x": 0.5,
+      "y": 0.5
+    },
+    "layer edges": { //границы слоя
+      "right": -0.2,
+      "bottom": -999.0,
+      "top": 0.2
+    }
+  },
+  "gamma": 1.4, //показатель адиабаты газа
+  "Mach": 3.0, //3.0, //число Маха исходной УВ
+  "Atwood": 0.5, //число Атвуда для неоднородности плотности
+
+  "finish time": 0.5, //конечное физическое время расчета
+  "export": { //параметры вывода в файл
+    "period": 0.05, //период вывода в файл, физическое время
+    "scatter": true, //scatter (ASCII)
+    "neighbours": false, //соседи (ASCII)
+    "neighbours12": false, //соседи с учетом диагональных и разделения ребер (ASCII)
+    "edges": true, //ребра (ASCII)
+    "fluxes": true, //потоки (ASCII)
+    "plt": true //бинарные .plt
+  },
+  "trees": {
+    "Nx": 10,
+    "Ny": 5,
+    "depth": 6
+  }, //число деревьев по осям и макс глубина
+
+  "RK order": 2, //порядок метода Рунге-Кутты
+  "Courant": 0.5, //число Куранта
+  "flux": "LF", //метод вычисления потоков на ребрах: "LF", "Riemann exact", "HLLC"
+  "refine period": 5, //период перестроения сетки в шагах
+  "refine criterion": {
+    "type": "grad rho", //критерий перестройки: "grad rho", "num entropy"
+    "level 0": 0.0005, //для grad rho
+    "factor": 3.0,
+    "K": 1.0, //для num entropy
+    "alpha": 0.0
+  },
+  "initial refine padding": 0.01, //ширина полосы дополнительного измельчения вокруг линий начального измельчения
+  "refine all": false //раздробить всё до упора и далее не изменять
+}
