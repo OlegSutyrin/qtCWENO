@@ -1,6 +1,8 @@
 #ifndef qtCWENO_globalFuncs_H //include guard
 #define qtCWENO_globalFuncs_H
 
+#include "problemConfig.h"
+
 //коэффициенты Рунге-Кутты
 const double RKcoeff[RK_ORDER_MAX][RK_ORDER_MAX][RK_ORDER_MAX + 1] = { //[order-1][step][Qn], [..][..][RK_ORDER_MAX] - производные
     {

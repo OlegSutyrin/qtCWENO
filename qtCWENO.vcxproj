@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\cellData.cpp" />
+    <ClCompile Include="src\output.cpp" />
+    <ClCompile Include="src\problemConfig.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\globalFuncs.cpp" />
     <ClCompile Include="src\cellBox.cpp" />
@@ -31,6 +33,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\cellData.h" />
+    <ClInclude Include="src\output.h" />
+    <ClInclude Include="src\problemConfig.h" />
     <ClInclude Include="src\main.h" />
     <ClInclude Include="src\globalFuncs.h" />
     <ClInclude Include="src\cellBox.h" />

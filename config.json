@@ -52,11 +52,8 @@
   "flux": "LF", //метод вычисления потоков на ребрах: "LF", "Riemann exact", "HLLC"
   "refine period": 5, //период перестроения сетки в шагах
   "refine criterion": {
-    "type": "grad rho", //критерий перестройки: "grad rho", "num entropy"
-    "level 0": 0.0005, //для grad rho
-    "factor": 3.0,
-    "K": 1.0, //для num entropy
-    "alpha": 0.0
+    "level 0": 0.0005,
+    "factor": 3.0
   },
   "initial refine padding": 0.01, //ширина полосы дополнительного измельчения вокруг линий начального измельчения
   "refine all": false //раздробить всё до упора и далее не изменять
