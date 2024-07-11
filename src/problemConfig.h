@@ -7,6 +7,7 @@
 const double DOUBLE_EPS10 = 1e-12; //эпсилон дл€ проверки равенства чисел типа double
 const int DIRECTIONS_NUM = static_cast<int>(Directions::count); //число кардинальных направлений системы координат
 const int QUADRANTS_NUM = static_cast<int>(Quadrant::count); //число вершин €чейки
+const int NEIGHBOURS_NUM = static_cast<int>(Neighbour::count); //число соседей
 const int EQ_NUM = static_cast<int>(Equation::count); //число уравнений
 const int POLY_COEFF_NUM = 5; //число коэффициентов параболоида CWENO: px, py, pxx, pxy, pyy
 //const int MAX_NEIGHBOURS_NUM = 12; //число всех возможных соседей с учетом диагональных
@@ -53,7 +54,7 @@ public:
     bool exportEdgeFluxes = false; //выводить ли потоки (ASCII)
     bool exportPlt = true; //выводить ли бинарные .plt-файлы
 
-    problemConfig(); //дефолтный конструктор
+    problemConfig() {}; //дефолтный конструктор
     problemConfig(std::string filename); //конструктор по json-файлу
     friend std::ostream& operator<<(std::ostream& os, const problemConfig& c); //output overload
 };

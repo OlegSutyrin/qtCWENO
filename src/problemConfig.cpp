@@ -4,9 +4,6 @@
 #include "cellBox.h"
 #include "problemConfig.h"
 
-
-problemConfig::problemConfig() {}; //дефолтный конструктор
-
 problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
 {
     cout << "Reading config from " << filename << endl;
@@ -20,11 +17,7 @@ problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
         cout << "Bad input file: " << e.what() << endl;
     }
 
-    global_box.setP(Quadrant::top_left, point{ j["box"]["x min"], j["box"]["y max"] });
-    global_box.setP(Quadrant::top_right, point{ j["box"]["x max"], j["box"]["y max"] });
-    global_box.setP(Quadrant::bottom_right, point{ j["box"]["x max"], j["box"]["y max"] });
-    global_box.setP(Quadrant::bottom_left, point{ j["box"]["x min"], j["box"]["y min"] });
-    global_box.updateCenter();
+    global_box = cellBox({ j["box"]["x min"], j["box"]["y min"] }, { j["box"]["x max"], j["box"]["y max"] });
 
     problem = j["flow type"];
     shock_position_x = j["flow geometry"]["shock position x"];

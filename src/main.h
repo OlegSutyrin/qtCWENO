@@ -9,10 +9,10 @@
 using std::cout;
 using std::endl;
 
-using treeId = size_t;
-using nodeId = size_t;
-using dataId = size_t;
-using edgeId = size_t;
+using quadTreeId = size_t; //TODO: разобраться, полезны ли эти alias'ы
+using treeNodeId = size_t;
+using cellDataId = size_t;
+using nodeEdgeId = size_t;
 const size_t null = size_t(-1); //наибольшее значение для служебных целей
 using rkStep = std::size_t;
 
@@ -35,6 +35,16 @@ enum class Quadrant { //квадранты (дети ноды)
     count
 };
 const Quadrant Quadrants[] = { Quadrant::top_left, Quadrant::top_right, Quadrant::bottom_right, Quadrant::bottom_left }; //для циклов по квадрантам
+enum class Neighbour { //соседи (используются для работы со структурой дерева)
+    top,
+    right,
+    bottom,
+    left,
+    count
+};
+const Neighbour Neighbours[] = { Neighbour::top, Neighbour::right, Neighbour::bottom, Neighbour::left }; //для циклов по соседям
+
+
 
 enum class Equation : unsigned int { //уравнения
     density,
@@ -60,8 +70,9 @@ enum class FluxType { //методы вычисления потоков на ребрах
 };
 
 #include "output.h"
-struct Globals
+class Globals
 {
+public:
     size_t timestep_number = 0;
     size_t export_number = 0;
     double time = 0.0;
