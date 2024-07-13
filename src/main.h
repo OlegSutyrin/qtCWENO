@@ -9,12 +9,12 @@
 using std::cout;
 using std::endl;
 
-using quadTreeId = size_t; //TODO: разобраться, полезны ли эти alias'ы
+using quadTreeId = size_t; //TODO: заменить на "enum class quadTreeId : size_t {}", но найти способ избежать множества static_cast'ов
 using treeNodeId = size_t;
 using cellDataId = size_t;
 using nodeEdgeId = size_t;
 const size_t null = size_t(-1); //наибольшее значение для служебных целей
-using rkStep = std::size_t;
+using rkStep = size_t;
 
 enum class Directions { //кардинальные направления
     up,
@@ -86,7 +86,9 @@ public:
 #include "problemConfig.h"
 extern problemConfig config; //конфиг задачи
 extern Globals globals; //глобальные переменные
-//extern quadTreeForest forest; //лес деревьев
+
+#include "quadTreeForest.h"
+extern quadTreeForest forest; //лес деревьев
 
 
 

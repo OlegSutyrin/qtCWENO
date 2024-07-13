@@ -9,7 +9,7 @@
 
 quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
 {
-    id = _id;
+    id_ = _id;
     //нулевой уровень не используется для простоты нумерации
     nodes.emplace_back();
     active_nodes_num.push_back(1); //на нулевом уровне хранится общее число активных нод
@@ -19,7 +19,7 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
     initNewLevel(); //выделение места под первый слой
     nodes[FIRST_LEVEL].emplace_back(); //выделение места под одну ноду (и инициализация значениями по умолчанию)
     treeNode& root = nodes[FIRST_LEVEL][FIRST_ID]; //по ссылке
-    root.setTag({ id, FIRST_LEVEL, FIRST_ID });
+    root.setTag({ id_, FIRST_LEVEL, FIRST_ID });
     cellBox root_box = generateBox(config.global_box);
     root.setBox(root_box);
     //root.is_leaf = true; (=true по умолчанию)
@@ -78,6 +78,11 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
     }
 }
 
+treeNodeId quadTree::id() const { return id_; }
+bool quadTree::isGhost() const { return is_ghost; }
+
+const treeNode& quadTree::root() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизменяюему) корневую ноду
+
 void quadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
 {
     std::vector<treeNode> nodes_level;
@@ -94,8 +99,8 @@ cellBox quadTree::generateBox(cellBox global_box) const //вычисление bounding bo
 {
     double dx = (global_box.bottom_right().x - global_box.bottom_left().x) / config.Nx;
     double dy = (global_box.top_left().y - global_box.bottom_left().y) / config.Ny;
-    size_t discrete_coord_x = (size_t)(id / config.Ny) % config.Nx;
-    size_t discrete_coord_y = (size_t)id % config.Ny;
+    size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
+    size_t discrete_coord_y = (size_t)id_ % config.Ny;
     return cellBox({ global_box.bottom_left().x + discrete_coord_x * dx,global_box.bottom_left().y + discrete_coord_y * dy }, 
         { global_box.bottom_left().x + (discrete_coord_x + 1) * dx,global_box.bottom_left().y + (discrete_coord_y + 1) * dy });
 }
@@ -103,25 +108,25 @@ cellBox quadTree::generateBox(cellBox global_box) const //вычисление bounding bo
 quadTreeId quadTree::calcNeighbourTreeId(Neighbour Neighbour) const //вычисление id соседнего дерева по id текущего
 {
     quadTreeId ret = null;
-    size_t discrete_coord_x = (size_t)(id / config.Ny) % config.Nx;
-    size_t discrete_coord_y = id % config.Ny;
+    size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
+    size_t discrete_coord_y = id_ % config.Ny;
     switch (Neighbour)
     {
     case Neighbour::top:
         if (discrete_coord_y < config.Ny - 1)
-            ret = id + 1;
+            ret = id_ + 1;
         break;
     case Neighbour::right:
         if (discrete_coord_x < config.Nx - 1)
-            ret = id + config.Ny;
+            ret = id_ + config.Ny;
         break;
     case Neighbour::bottom:
         if (discrete_coord_y > 0)
-            ret = id - 1;
+            ret = id_ - 1;
         break;
     case Neighbour::left:
         if (discrete_coord_x > 0)
-            ret = id - config.Ny;
+            ret = id_ - config.Ny;
         break;
     }
     return ret;
@@ -142,4 +147,23 @@ cellDataId quadTree::getVacantDataId() //получение номера вакантной ячейки или с
         vacant_data_ids.pop_back(); //убрать из списка вакантных ячеек
     }
     return ret;
+}
+
+treeNode& quadTree::getNodeByCoords(point p) const //ссылка на ноду по координатам
+{
+    auto& tree = forest.getTreeByCoords(p);
+    return tree.nodes[FIRST_LEVEL][FIRST_ID].getChildByCoords(p);
+}
+
+
+const std::string quadTree::dump() const //дамп дерева в строку (без нод)
+{
+    std::stringstream ret;
+    ret << "Tree " << id_ << ", " << "depth " << depth << " ( ";
+    for (auto& n : active_nodes_num)
+    {
+        ret << n << " ";
+    }
+    ret << "):" << endl;
+    return ret.str();
 }

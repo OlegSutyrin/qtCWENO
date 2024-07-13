@@ -17,7 +17,7 @@ std::pair<point, point> quadraturePoints(point const& p1, point const& p2); //дв
 
 class cellBox
 {
-    point vertices[QUADRANTS_NUM] = { { -1.0, 1.0 } ,{ 1.0, 1.0 } ,{ 1.0, -1.0 } ,{ -1.0, -1.0 } }; //top_left, top_right, bottom_right, bottom_left
+    point vertices[QUADRANTS_NUM] = { { -1.0, 1.0 }, { 1.0, 1.0 }, { 1.0, -1.0 }, { -1.0, -1.0 } }; //top_left, top_right, bottom_right, bottom_left
     point center_ = { 0, 0 };
 
 public:
@@ -30,6 +30,7 @@ public:
     point bottom_left() const;
     point center() const; //получение центра
     //void setP(Quadrant q, point pt); //задание вершины
+    double size() const;
     void updateCenter(); //вычисление центра по угловым точкам
     bool isPointInside(point p) const; //попадает ли точка в box
     cellBox quarterBox(Quadrant q); //получение четвертинки box'а

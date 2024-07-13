@@ -4,7 +4,7 @@
 #include "main.h"
 
 //compile-time константы
-const double DOUBLE_EPS10 = 1e-12; //эпсилон дл€ проверки равенства чисел типа double
+const double DOUBLE_EPS12 = 1e-12; //эпсилон дл€ проверки равенства чисел типа double
 const int DIRECTIONS_NUM = static_cast<int>(Directions::count); //число кардинальных направлений системы координат
 const int QUADRANTS_NUM = static_cast<int>(Quadrant::count); //число вершин €чейки
 const int NEIGHBOURS_NUM = static_cast<int>(Neighbour::count); //число соседей
@@ -13,6 +13,13 @@ const int POLY_COEFF_NUM = 5; //число коэффициентов параболоида CWENO: px, py, p
 //const int MAX_NEIGHBOURS_NUM = 12; //число всех возможных соседей с учетом диагональных
 const int TECPLOT_FIELDS_NUMBER = 2 + EQ_NUM + 3; //x,y + rho,u,v,p + Mach,level,gradrho
 const int RK_ORDER_MAX = 3; //максимальный пор€док метода –унге- утты
+
+//константы дл€ шаблонов циклов по деревь€м и нодам
+const bool INCLUDE_GHOSTS = true;
+const bool SKIP_GHOSTS = false;
+const bool INCLUDE_BRANCHES = true;
+const bool SKIP_BRANCHES = false;
+
 
 #include "cellBox.h"
 class problemConfig //runtime константы

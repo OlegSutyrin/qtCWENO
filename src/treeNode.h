@@ -19,7 +19,7 @@ class treeNode
     bool is_deleted = false; //для отличия живых ячеек от удаленных, т.к. удаление = пометка места на уровне свободным
     cellDataId dataId_ = null; //номер записи для данных в одномерном массиве cell_data, только для листьев
     cellBox box_{};
-    nodeTag neighbours[NEIGHBOURS_NUM] = {}; //соседи
+    std::array<nodeTag, NEIGHBOURS_NUM> neighbours = {}; //соседи
     //nodeTag neighbours12[MAX_NEIGHBOURS_NUM] = {}; //соседи с учетом диагональных и возможного разделения ребра надвое
     //номера ребер, составляющих стороны ячейки (до DIRECTIONS_NUM*2 штук с учетом возможного разделения ребер)
     //nodeEdgeId edges[DIRECTIONS_NUM * 2] = { null, null, null, null, null, null, null, null }; //нумерация по часовой стрелке, начиная с левой половины верхней стороны
@@ -38,6 +38,8 @@ class treeNode
 public:
     treeNode() {}; //default constructor
     treeNode(nodeTag t, treeNodeId p, cellDataId d, cellBox b) : tag_(t), parentId_(p), dataId_(d), box_(b) {}; //конструктор по частичным данным
+    bool isDeleted() const;
+    bool isLeaf() const;
     nodeTag tag() const; //получение тэга 
     void setTag(nodeTag t); //задание тэга
     cellDataId dataId() const; //получение dataId
@@ -46,6 +48,22 @@ public:
     void setBox(cellBox b); //задание box'а
     nodeTag getNeighbour(Neighbour n) const; 
     void setNeighbour(Neighbour n, nodeTag t);
+
+    cellData& dataRef() const; //ссылка на данные
+    treeNode& getChild(Quadrant q); //ссылка на ребенка по квадранту
+    treeNode& getChildByCoords(point p); //ссылка на ребенка по координатам
+
+    double magGradRho() const; //примерный градиент плотности
+
+    std::string dump() const; //дамп ноды в строку
+
+
+
+    friend class quadTree;
+    friend class quadTreeForest; //для глобальных функций TODO:разобраться, как лучше реализовать вложенные циклы без нарушения инкапсуляции
+
+
+
     /*static treeNode& getNode(nodeTag tag); //ссылка на ноду по тэгу (static - общая функция для всех нод)
     static treeNode& getNodeByCoords(point p); //ссылка на ноду по координатам
     treeNode& getChildByCoords(point p) const; //ссылка на ребенка по координатам

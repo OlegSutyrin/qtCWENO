@@ -66,6 +66,8 @@ point cellBox::center() const { return center_; } //получение центра
 
 //void cellBox::setP(Quadrant q, point pt) { vertices[static_cast<int>(q)] = pt; } //задание вершины
 
+double cellBox::size() const { return bottom_right().x - bottom_left().x; }
+
 void cellBox::updateCenter() { center_ = middle(vertices[static_cast<int>(Quadrant::bottom_left)], vertices[static_cast<int>(Quadrant::top_right)]); } //вычисление центра по угловым точкам
 
 bool cellBox::isPointInside(point p) const //попадает ли точка в box (включая левую и ниюжнюю границы)
