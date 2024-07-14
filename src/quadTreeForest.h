@@ -17,6 +17,7 @@ public: //векторы сделаны публичными для упрощения циклов по уровням и ячейкам (
 
     void initialize(); //выделение памяти под деревья и прочее
     void addTree(quadTree tree); //доабвление дерева в список
+    quadTree& treeRef(quadTreeId id); //ссылка на дерево по id
     quadTree& getTreeByCoords(point p); //поиск дерева по координатам точки
     //edgeId getVacantEdgeId(); //получение номера вакантной ячейки или содание новой в векторе edges
     //edgeId addEdge(nodeEdge edge); //внесение ребра в список

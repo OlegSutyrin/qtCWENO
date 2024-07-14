@@ -16,22 +16,30 @@ class quadTree
     std::vector<std::vector<treeNodeId>> vacant_node_ids; //поуровневый список свободных мест в nodes
     std::vector<size_t> active_nodes_num; //число активных (неудаленных) нод по уровням
     std::vector<size_t> leaf_nodes_num; //число листовых нод по уровням
-    std::vector<cellData> data; //одномерный вектор физических данных для листьев
+    std::vector<cellData> data_; //одномерный вектор физических данных для листьев
     std::vector<cellDataId> vacant_data_ids; //список свободных мест в data
 
 public:
     quadTree(quadTreeId _id); //конструктор дерева с одной нодой
+
     treeNodeId id() const;
-    const treeNode& root() const; //ссылка на (неизменяюему) корневую ноду
+    const treeNode& root() const; //ссылка на (const) корневую ноду
+    treeNode& nodeRef(int depth, treeNodeId id); //ссылка на ноду
+    cellData& dataRef(cellDataId id); //ссылка на cellData по id
+    cellData data(cellDataId id); //копия cellData по id
+
     bool isGhost() const; //является ли дерево ghost'ом
-    bool isGhostCorner() const; //является ли дерево угловым ghost'ом
-    static bool isTreeGhost(quadTreeId id); //является ли дерево ghost'ом (по id)
+    //bool isGhostCorner() const; //является ли дерево угловым ghost'ом
+    //static bool isTreeGhost(quadTreeId id); //является ли дерево ghost'ом (по id)
+
     void initNewLevel(); //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
     cellBox generateBox(cellBox global_box) const; //вычисление bounding box для дерева по параметрам начальной сетки и индексу дерева
-    quadTreeId calcNeighbourTreeId(Neighbour Neighbour) const; //вычисление id соседнего дерева по id текущего
-    //quadTreeId getNeighbour12TreeId(Neighbour12 Neighbour); //вычисление id соседнего дерева по id текущего
-    treeNodeId getVacantNodeId(int depth); //получение номера вакантной ячейки или создание новой в векторе nodes[depth]
+    quadTreeId calcNeighbourTreeId(Neighbour n) const; //вычисление id соседнего дерева по id текущего
+    quadTreeId calcNeighbour12TreeId(Neighbour12 n12) const; //вычисление id соседнего дерева по id текущего
+
+    //treeNodeId getVacantNodeId(int depth); //получение номера вакантной ячейки или создание новой в векторе nodes[depth]
     cellDataId getVacantDataId(); //получение номера вакантной ячейки или создание новой в векторе data
+
     treeNode& getNodeByCoords(point p) const; //ссылка на ноду по координатам
     const std::string dump() const; //дамп дерева в строку
 

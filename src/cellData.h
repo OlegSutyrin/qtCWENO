@@ -1,10 +1,12 @@
 #ifndef qtCWENO_cellData_H //include guard
 #define qtCWENO_cellData_H
 
+#include <array>
+
 class cellData
 {
     //TODO: разобраться, почему без инициализации (Qn = {}) получаются неверные расчеты
-    double Qn[RK_ORDER_MAX + 1][EQ_NUM] = {}; //хранимые консервативные величины на подшагах Рунге-Кутты
+    std::array<std::array<double, EQ_NUM>, RK_ORDER_MAX + 1> Qn = {}; //хранимые консервативные величины на подшагах Рунге-Кутты
     double y = 1.0; //для осесимметричных координат, в декартовых задается равным 1.0
 
 public:
@@ -22,7 +24,10 @@ public:
     double G(Equation eq, rkStep rk = 0) const;
 
     void clear(); //обнуление данных
+    void set(cellData d); //запись данных
     void setY(double _y); //задание y
+    void add(cellData d); //добавление к текущим консервативным величинам
+    void divide(double divisor); //деление консервативных величин
     //void flipVelocity(Neighbour n); //изменение знака компоненты скорости
     std::string dumpQn() const; //дамп всех Qn
 

@@ -95,14 +95,36 @@ double cellData::G(Equation eq, rkStep rk) const
 void cellData::clear() //обнуление данных
 {
     for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
-        for (auto& eq : Equations)
-        {
-            Qn[rk][static_cast<int>(eq)] = 0;
-        }
+        Qn[rk].fill(0);
     //y = 1.0; не нужно?
 }
 
+void cellData::set(cellData d) //запись данных
+{
+    for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
+        Qn[rk] = d.Qn[rk]; //приравнивание значений std::array
+    y = d.y;
+}
 void cellData::setY(double _y) { y = _y; } //задание y
+
+void cellData::add(cellData d) //добавление к текущим консервативным величинам
+{
+    for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
+        for (auto& eq : Equations)
+        {
+            Qn[rk][static_cast<int>(eq)] += d.Qn[rk][static_cast<int>(eq)];
+        }
+}
+
+void cellData::divide(double divisor) //деление консервативных величин
+{
+    for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
+        for (auto& eq : Equations)
+        {
+            Qn[rk][static_cast<int>(eq)] /= divisor;
+        }
+}
+
 
 /*void cellData::flipVelocity(Neighbour n)  //изменение знака компоненты скорости
 {

@@ -64,17 +64,17 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
     }
 
     //соседи с учетом диагональных
-    /*for (auto n : Neighbours12)
+    for (auto n : Neighbours12)
     {
-        auto nid = getNeighbour12TreeId(n);
-        root.neighbours12[n] = { nid, FIRST_LEVEL, FIRST_ID };
-    }*/
+        auto nid = calcNeighbour12TreeId(n);
+        root.setNeighbour12(n, { nid, FIRST_LEVEL, FIRST_ID });
+    }
 
     //выделение памяти под физические данные
     root.setDataId(getVacantDataId());
     if (config.coord_type == CoordType::axisymmetric) //внесение r в cellData для осесимметричных координат
     {
-        data[root.dataId()].setY(root_box.center().y);
+        data_[root.dataId()].setY(root_box.center().y);
     }
 }
 
@@ -82,6 +82,63 @@ treeNodeId quadTree::id() const { return id_; }
 bool quadTree::isGhost() const { return is_ghost; }
 
 const treeNode& quadTree::root() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизменяюему) корневую ноду
+const int ERROR_NO_NODE = -1;
+treeNode& quadTree::nodeRef(int d, treeNodeId id)
+{
+    try {
+        if (d <= depth && id < nodes[d].size()) //есть такая нода (м.б. удаленная)
+        {
+            return nodes[d][id];
+        }
+        else
+        {
+            throw ERROR_NO_NODE;
+        }
+    }
+    catch (int err_code)
+    {
+        cout << "tree.nodeRef() error: " << err_code << "tag: (" << id_ << ", " << d << ", " << id << ")" << endl;
+        return nodes[FIRST_LEVEL][FIRST_ID]; //to suppress warning
+    }
+}
+
+const int ERROR_BAD_DATA_ID = -1;
+cellData& quadTree::dataRef(cellDataId id) //ссылка на cellData по id
+{
+    try {
+        if (id < data_.size()) //есть такие данные (м.б. удаленные)
+        {
+            return data_[id];
+        }
+        else
+        {
+            throw ERROR_BAD_DATA_ID;
+        }
+    }
+    catch (int err_code)
+    {
+        cout << "tree.dataRef() error: " << err_code << "data id: " << id << endl;
+        return data_[0]; //to suppress warning
+    }
+}
+cellData quadTree::data(cellDataId id) //копия cellData по id
+{
+    try {
+        if (id < data_.size()) //есть такие данные (м.б. удаленные)
+        {
+            return data_[id];
+        }
+        else
+        {
+            throw ERROR_BAD_DATA_ID;
+        }
+    }
+    catch (int err_code)
+    {
+        cout << "tree.data() error: " << err_code << "data id: " << id << endl;
+        return data_[0]; //to suppress warning
+    }
+}
 
 void quadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
 {
@@ -105,12 +162,12 @@ cellBox quadTree::generateBox(cellBox global_box) const //вычисление bounding bo
         { global_box.bottom_left().x + (discrete_coord_x + 1) * dx,global_box.bottom_left().y + (discrete_coord_y + 1) * dy });
 }
 
-quadTreeId quadTree::calcNeighbourTreeId(Neighbour Neighbour) const //вычисление id соседнего дерева по id текущего
+quadTreeId quadTree::calcNeighbourTreeId(Neighbour n) const //вычисление id соседнего дерева по id текущего
 {
     quadTreeId ret = null;
     size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
     size_t discrete_coord_y = id_ % config.Ny;
-    switch (Neighbour)
+    switch (n)
     {
     case Neighbour::top:
         if (discrete_coord_y < config.Ny - 1)
@@ -131,6 +188,50 @@ quadTreeId quadTree::calcNeighbourTreeId(Neighbour Neighbour) const //вычисление
     }
     return ret;
 }
+quadTreeId quadTree::calcNeighbour12TreeId(Neighbour12 n12) const
+{
+    quadTreeId ret = null;
+    size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
+    size_t discrete_coord_y = id_ % config.Ny;
+    switch (n12)
+    {
+    case Neighbour12::top1: //единственный верхний записывается как top1 = <tag>, top2 = null
+        if (discrete_coord_y < config.Ny - 1)
+            ret = id_ + 1;
+        break;
+    case Neighbour12::top_right:
+        if (discrete_coord_y < config.Ny - 1 && discrete_coord_x < config.Nx - 1)
+            ret = id_ + 1 + config.Ny;
+        break;
+    case Neighbour12::right1: //единственный правый
+        if (discrete_coord_x < config.Nx - 1)
+            ret = id_ + config.Ny;
+        break;
+    case Neighbour12::bottom_right:
+        if (discrete_coord_y > 0 && discrete_coord_x < config.Nx - 1)
+            ret = id_ - 1 + config.Ny;
+        break;
+    case Neighbour12::bottom1: //единственный нижний
+        if (discrete_coord_y > 0)
+            ret = id_ - 1;
+        break;
+    case Neighbour12::bottom_left:
+        if (discrete_coord_y > 0 && discrete_coord_x > 0)
+            ret = id_ - 1 - config.Ny;
+        break;
+    case Neighbour12::left1: //единственный левый
+        if (discrete_coord_x > 0)
+            ret = id_ - config.Ny;
+        break;
+    case Neighbour12::top_left:
+        if (discrete_coord_y < config.Ny - 1 && discrete_coord_x > 0)
+            ret = id_ + 1 - config.Ny;
+        break;
+    default:
+        ret = null;
+    }
+    return ret;
+}
 
 cellDataId quadTree::getVacantDataId() //получение номера вакантной ячейки или создание новой в векторе data
 {
@@ -138,8 +239,8 @@ cellDataId quadTree::getVacantDataId() //получение номера вакантной ячейки или с
     //если нет вакантных мест - писать в конец массива
     if (vacant_data_ids.empty())
     {
-        ret = data.size(); //на 1 больше номера последнего элемента
-        data.emplace_back(); //выделение памяти (должно вызываться после .size())
+        ret = data_.size(); //на 1 больше номера последнего элемента
+        data_.emplace_back(); //выделение памяти (должно вызываться после .size())
     }
     else
     {

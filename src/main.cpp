@@ -11,6 +11,35 @@
 #include "cellBox.h"
 #include "quadTreeForest.h"
 
+Neighbour opposite(Neighbour n) //противоположный сосед
+{
+    switch (n)
+    {
+    case Neighbour::top: return Neighbour::bottom;
+    case Neighbour::right: return Neighbour::left;
+    case Neighbour::bottom: return Neighbour::top;
+    case Neighbour::left: return Neighbour::right;
+    }
+}
+Neighbour12 opposite(Neighbour12 n12) //противоположный (относительно ребра или вершины) сосед
+{
+    switch (n12)
+    {
+    case Neighbour12::top1: return Neighbour12::bottom2;
+    case Neighbour12::top2: return Neighbour12::bottom1;
+    case Neighbour12::top_right: return Neighbour12::bottom_left;
+    case Neighbour12::right1: return Neighbour12::left2;
+    case Neighbour12::right2: return Neighbour12::left1;
+    case Neighbour12::bottom_right: return Neighbour12::top_left;
+    case Neighbour12::bottom1: return Neighbour12::top2;
+    case Neighbour12::bottom2: return Neighbour12::top1;
+    case Neighbour12::bottom_left: return Neighbour12::top_right;
+    case Neighbour12::left1: return Neighbour12::right2;
+    case Neighbour12::left2: return Neighbour12::right1;
+    case Neighbour12::top_left: return Neighbour12::bottom_right;
+    default: return Neighbour12::top1; //to suppress warning
+    }
+}
 
 //глобальные объекты
 problemConfig config; //конфиг задачи

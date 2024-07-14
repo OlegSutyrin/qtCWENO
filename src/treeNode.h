@@ -11,16 +11,16 @@
 //узел дерева
 class treeNode
 {
-    nodeTag tag_{}; //{} вызывает дефолтный конструктор nodeTag
+    nodeTag tag_ = {}; //{} вызывает дефолтный конструктор nodeTag
     treeNodeId parentId_ = null; //номер родителя на предыдущем уровне
     treeNodeId childrenId_ = null; //номер первого child на следующем уровне, остальные идут сразу за ним
     bool has_grandchildren = false; //есть ли внуки (нужно для балансировки)
     bool is_leaf = true; //является ли ячейка листом (только для них хранятся физические данные) (избыточно, но проще писать, чем проверять наличие детей)
     bool is_deleted = false; //для отличия живых ячеек от удаленных, т.к. удаление = пометка места на уровне свободным
     cellDataId dataId_ = null; //номер записи для данных в одномерном массиве cell_data, только для листьев
-    cellBox box_{};
+    cellBox box_ = {};
     std::array<nodeTag, NEIGHBOURS_NUM> neighbours = {}; //соседи
-    //nodeTag neighbours12[MAX_NEIGHBOURS_NUM] = {}; //соседи с учетом диагональных и возможного разделения ребра надвое
+    std::array<nodeTag, MAX_NEIGHBOURS12_NUM> neighbours12 = {}; //соседи с учетом диагональных и возможного разделения ребра надвое
     //номера ребер, составляющих стороны ячейки (до DIRECTIONS_NUM*2 штук с учетом возможного разделения ребер)
     //nodeEdgeId edges[DIRECTIONS_NUM * 2] = { null, null, null, null, null, null, null, null }; //нумерация по часовой стрелке, начиная с левой половины верхней стороны
     //значения по умолчанию для edges[8] нужно укзаывать явно, т.к. нет дефолтного конструктора для nodeEdgeId
@@ -42,16 +42,25 @@ public:
     bool isLeaf() const;
     nodeTag tag() const; //получение тэга 
     void setTag(nodeTag t); //задание тэга
-    cellDataId dataId() const; //получение dataId
-    void setDataId(cellDataId id); //задание dataId
-    cellBox box() const; //получение box'a
-    void setBox(cellBox b); //задание box'а
+    cellDataId dataId() const;
+    void setDataId(cellDataId id);
+    cellBox box() const;
+    void setBox(cellBox b);
     nodeTag getNeighbour(Neighbour n) const; 
     void setNeighbour(Neighbour n, nodeTag t);
+    nodeTag getNeighbour12(Neighbour n12) const; 
+    void setNeighbour12(Neighbour12 n12, nodeTag t);
+    void setData(cellData data); //запись данных
 
     cellData& dataRef() const; //ссылка на данные
-    treeNode& getChild(Quadrant q); //ссылка на ребенка по квадранту
+    cellData data() const; //копия данных
+    treeNode& childRef(Quadrant q); //ссылка на ребенка по квадранту
+    const treeNode& childRef(Quadrant q) const; //(const) ссылка на ребенка
     treeNode& getChildByCoords(point p); //ссылка на ребенка по координатам
+
+    
+    
+    static treeNode& nodeRef(nodeTag tag); //ссылка на ноду по тэгу (static - общая функция для всех нод)
 
     double magGradRho() const; //примерный градиент плотности
 
@@ -64,16 +73,12 @@ public:
 
 
 
-    /*static treeNode& getNode(nodeTag tag); //ссылка на ноду по тэгу (static - общая функция для всех нод)
-    static treeNode& getNodeByCoords(point p); //ссылка на ноду по координатам
+    /*static treeNode& getNodeByCoords(point p); //ссылка на ноду по координатам
     treeNode& getChildByCoords(point p) const; //ссылка на ребенка по координатам
     treeNode& getChild(Quadrant q) const; //ссылка на ребенка по квадранту
     nodeTag getNodeOrChildTag(int target_depth, Quadrant quadrant) const; //поиск граничной ноды нужного уровня внутри данной (глубина поиска не более 1)
-    cellData getData() const; //чтение данных
-    cellData& getDataRef() const; //ссылка на данные
-    bool hasEdge(ushorty etype) const; //есть ли ребро
-    nodeEdge& getEdge(ushorty etype) const; //ссылка на ребро
-    void setData(cellData data); //запись данных
+    //bool hasEdge(ushorty etype) const; //есть ли ребро
+    //nodeEdge& getEdge(ushorty etype) const; //ссылка на ребро
     double h() const; //длина стороны ячейки
     bool hasChildren() const; //есть ли дети
     bool hasGrandChildren() const; //есть ли внуки
@@ -84,10 +89,9 @@ public:
     int neighbours12Num() const; //число соседей
     //bool isBoundary(); //является ли граничной
     //bool isCorner(); //является ли угловой
-    treeNode& getNeigbourOrSelf(Neighbour dir, ushorty target_depth) const; //ссылка на соседа (или на себя, если нет соседа)
+    treeNode& getNeigbourOrSelf(Neighbour dir, int target_depth) const; //ссылка на соседа (или на себя, если нет соседа)
     void updateNeighbour(Neighbour dir, nodeTag tag1, nodeTag tag2); //внесение данных о соседе после его дробления
     void updateNeighbour(Neighbour dir, nodeTag tag); //внесение данных о соседе
-    void updateNeighbour12(Neighbour12 n, nodeTag tag);
     int markToRefine(); //пометка ячейки к дроблению
     int refine(); //дробление ячейки
     int tryCoarsen(); //склейка ячейки

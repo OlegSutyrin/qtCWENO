@@ -6,14 +6,15 @@
 #include "quadTree.h"
 #include "quadTreeForest.h"
 
-const int ERROR_TREE_BAD_COORDS = -1;
-const int ERROR_COULDNT_FIND_TREE = -2;
-void quadTreeForest::initialize()
+const int ERROR_BAD_TREE_ID = -1;
+const int ERROR_TREE_BAD_COORDS = -2;
+const int ERROR_COULDNT_FIND_TREE = -3;
+void quadTreeForest::initialize() //выделение памяти под деревья
 { 
     trees.reserve(config.Nx * config.Ny); //массив деревьев
     forest.toRefine.resize(config.max_depth + 1); //уровни списка ячеек для дробления (+1 для нулевого уровня) (resize увеличивает вектор и инициализирует элементы по умлочанию)
 
-} //выделение памяти под деревья
+}
 void quadTreeForest::addTree(quadTree tree) { trees.push_back(tree); } //доабвление дерева в список
 quadTree& quadTreeForest::getTreeByCoords(point p) //поиск дерева по координатам точки
 {
@@ -34,10 +35,28 @@ quadTree& quadTreeForest::getTreeByCoords(point p) //поиск дерева по координатам
     }
     catch (int err_code)
     {
-        cout << "getTreeByCoords error: " << err_code << " coords (" << p.x << ", " << p.y << ")" << endl;
+        cout << "getTreeByCoords error: " << err_code << " coords " << p << endl;
         return trees[0]; //to suppress warning
     }
+}
 
+quadTree& quadTreeForest::treeRef(quadTreeId id) //ссылка на дерево по id
+{
+    try {
+        if (id < trees.size()) //есть такое дерево
+        {
+            return trees[id];
+        }
+        else
+        {
+            throw ERROR_BAD_TREE_ID;
+        }
+    }
+    catch (int err_code)
+    {
+        cout << "forest.tree() error: " << err_code << "tree id: " << id << endl;
+        return trees[0]; //to suppress warning
+    }
 }
 
 const int INDEX_MACH = TECPLOT_FIELDS_NUMBER - 3;
@@ -70,7 +89,7 @@ dataExtrema quadTreeForest::getExtrema() //сбор экстремумов всех величин для выв
             {
                 if (!cnode.isDeleted() && cnode.isLeaf())
                 {
-                    cellData& d = tree.data[cnode.dataId()];
+                    cellData& d = tree.dataRef(cnode.dataId());
                     int index = 2 + static_cast<int>(Equation::density); double tmp = d.rho();
                     if (mins[index] > tmp) { mins[index] = tmp; }
                     if (maxs[index] < tmp) { maxs[index] = tmp; }

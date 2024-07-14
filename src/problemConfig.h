@@ -9,8 +9,8 @@ const int DIRECTIONS_NUM = static_cast<int>(Directions::count); //число кардинал
 const int QUADRANTS_NUM = static_cast<int>(Quadrant::count); //число вершин €чейки
 const int NEIGHBOURS_NUM = static_cast<int>(Neighbour::count); //число соседей
 const int EQ_NUM = static_cast<int>(Equation::count); //число уравнений
+const int MAX_NEIGHBOURS12_NUM = static_cast<int>(Neighbour12::count); //число всех возможных соседей с учетом диагональных
 const int POLY_COEFF_NUM = 5; //число коэффициентов параболоида CWENO: px, py, pxx, pxy, pyy
-//const int MAX_NEIGHBOURS_NUM = 12; //число всех возможных соседей с учетом диагональных
 const int TECPLOT_FIELDS_NUMBER = 2 + EQ_NUM + 3; //x,y + rho,u,v,p + Mach,level,gradrho
 const int RK_ORDER_MAX = 3; //максимальный пор€док метода –унге- утты
 
