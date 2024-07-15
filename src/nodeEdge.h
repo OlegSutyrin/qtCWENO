@@ -2,7 +2,7 @@
 #define qtCWENO_nodeEdge_H
 
 #include "main.h"
-#include "nodeTag.h"
+#include "NodeTag.h"
 
 
 #endif

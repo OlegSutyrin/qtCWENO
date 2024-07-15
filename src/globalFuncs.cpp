@@ -5,9 +5,9 @@
 #include <sstream>
 
 #include "main.h"
-#include "cellBox.h"
-#include "treeNode.h"
-#include "quadTreeForest.h"
+#include "CellBox.h"
+#include "TreeNode.h"
+#include "QuadTreeForest.h"
 #include "globalFuncs.h"
 
 

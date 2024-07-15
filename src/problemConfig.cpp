@@ -1,10 +1,10 @@
 #include "json.hpp" //NLohmann json lib
 
 #include "main.h"
-#include "cellBox.h"
-#include "problemConfig.h"
+#include "CellBox.h"
+#include "ProblemConfig.h"
 
-problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
+ProblemConfig::ProblemConfig(std::string filename) //конструктор по json-файлу
 {
     cout << "Reading config from " << filename << endl;
     nlohmann::json j;
@@ -17,7 +17,7 @@ problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
         cout << "Bad input file: " << e.what() << endl;
     }
 
-    global_box = cellBox({ j["box"]["x min"], j["box"]["y min"] }, { j["box"]["x max"], j["box"]["y max"] });
+    global_box = CellBox({ j["box"]["x min"], j["box"]["y min"] }, { j["box"]["x max"], j["box"]["y max"] });
 
     problem = j["flow type"];
     shock_position_x = j["flow geometry"]["shock position x"];
@@ -71,7 +71,7 @@ problemConfig::problemConfig(std::string filename) //конструктор по json-файлу
     return;
 }
 
-std::ostream& operator<<(std::ostream& os, const problemConfig& c) //output overload
+std::ostream& operator<<(std::ostream& os, const ProblemConfig& c) //output overload
 {
     os << std::boolalpha; //для словесного вывода boolean'ов
     os << "Global box: " << c.global_box.bottom_left() << " to " << c.global_box.top_right() << endl;

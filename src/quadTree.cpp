@@ -1,13 +1,13 @@
 #include "main.h"
-#include "cellBox.h"
-#include "cellData.h"
-#include "treeNode.h"
-#include "quadTree.h"
+#include "CellBox.h"
+#include "CellData.h"
+#include "TreeNode.h"
+#include "QuadTree.h"
 
 #include <sstream>
 
 
-quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
+QuadTree::QuadTree(quadTreeId _id) //конструктор дерева с одной нодой
 {
     id_ = _id;
     //нулевой уровень не используется для простоты нумерации
@@ -18,9 +18,9 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
     //первый слой - одна нода
     initNewLevel(); //выделение места под первый слой
     nodes[FIRST_LEVEL].emplace_back(); //выделение места под одну ноду (и инициализация значениями по умолчанию)
-    treeNode& root = nodes[FIRST_LEVEL][FIRST_ID]; //по ссылке
-    root.setTag({ id_, FIRST_LEVEL, FIRST_ID });
-    cellBox root_box = generateBox(config.global_box);
+    TreeNode& root = nodes[FIRST_LEVEL][FIRST_ID]; //по ссылке
+    root.setTag(NodeTag(id_, FIRST_LEVEL, FIRST_ID));
+    CellBox root_box = generateBox(config.global_box);
     root.setBox(root_box);
     //root.is_leaf = true; (=true по умолчанию)
     //root.is_deleted = false; (=false по умолчанию)
@@ -28,7 +28,7 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
     active_nodes_num[FIRST_LEVEL] = 1; //счетчик активных нод
     leaf_nodes_num[FIRST_LEVEL] = 1; //счетчик листовых нод
 
-    //nodeTag ctag = { root.tree_id, root.depth, root.id }; //тег корневой ноды
+    //NodeTag ctag = { root.tree_id, root.depth, root.id }; //тег корневой ноды
     //соседи и ребра
     for (auto n : Neighbours)
     {
@@ -38,7 +38,7 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
         else
         {
             //запись о соседе (корень соседнего дерева)
-            root.setNeighbour(n, { nid, FIRST_LEVEL, FIRST_ID });
+            root.setNeighbour(n, NodeTag(nid, FIRST_LEVEL, FIRST_ID));
             //создание ребра между ячейками
             /*nodeEdge edge;
             switch (n)
@@ -67,23 +67,23 @@ quadTree::quadTree(quadTreeId _id)  //конструктор дерева с одной нодой
     for (auto n : Neighbours12)
     {
         auto nid = calcNeighbour12TreeId(n);
-        root.setNeighbour12(n, { nid, FIRST_LEVEL, FIRST_ID });
+        root.setNeighbour12(n, NodeTag(nid, FIRST_LEVEL, FIRST_ID));
     }
 
     //выделение памяти под физические данные
     root.setDataId(getVacantDataId());
-    if (config.coord_type == CoordType::axisymmetric) //внесение r в cellData для осесимметричных координат
+    if (config.coord_type == CoordType::axisymmetric) //внесение r в CellData для осесимметричных координат
     {
         data_[root.dataId()].setY(root_box.center().y);
     }
 }
 
-treeNodeId quadTree::id() const { return id_; }
-bool quadTree::isGhost() const { return is_ghost; }
+treeNodeId QuadTree::id() const { return id_; }
+bool QuadTree::isGhost() const { return is_ghost; }
 
-const treeNode& quadTree::root() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизменяюему) корневую ноду
+const TreeNode& QuadTree::root() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизменяюему) корневую ноду
 const int ERROR_NO_NODE = -1;
-treeNode& quadTree::nodeRef(int d, treeNodeId id)
+TreeNode& QuadTree::nodeRef(int d, treeNodeId id)
 {
     try {
         if (d <= depth && id < nodes[d].size()) //есть такая нода (м.б. удаленная)
@@ -103,7 +103,7 @@ treeNode& quadTree::nodeRef(int d, treeNodeId id)
 }
 
 const int ERROR_BAD_DATA_ID = -1;
-cellData& quadTree::dataRef(cellDataId id) //ссылка на cellData по id
+CellData& QuadTree::dataRef(cellDataId id) //ссылка на CellData по id
 {
     try {
         if (id < data_.size()) //есть такие данные (м.б. удаленные)
@@ -121,7 +121,7 @@ cellData& quadTree::dataRef(cellDataId id) //ссылка на cellData по id
         return data_[0]; //to suppress warning
     }
 }
-cellData quadTree::data(cellDataId id) //копия cellData по id
+CellData QuadTree::data(cellDataId id) //копия CellData по id
 {
     try {
         if (id < data_.size()) //есть такие данные (м.б. удаленные)
@@ -140,29 +140,29 @@ cellData quadTree::data(cellDataId id) //копия cellData по id
     }
 }
 
-void quadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
+void QuadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
 {
-    std::vector<treeNode> nodes_level;
+    std::vector<TreeNode> nodes_level;
     nodes.push_back(nodes_level); //новый слой нод
     active_nodes_num.push_back(0); //новая запись о числе активных нод на слое
     leaf_nodes_num.push_back(0); //новая запись о числе листьев на слое
     std::vector<treeNodeId> vacant_node_ids_level;
-    vacant_node_ids.push_back(vacant_node_ids_level); //новый слой записей о вакантных нодых
+    vacant_node_ids.push_back(vacant_node_ids_level); //новый слой записей о вакантных нодах
     depth++; //глубина дерева +1
     return;
 }
 
-cellBox quadTree::generateBox(cellBox global_box) const //вычисление bounding box для дерева по параметрам начальной сетки и индексу дерева
+CellBox QuadTree::generateBox(const CellBox& global_box) const //вычисление bounding box для дерева по параметрам начальной сетки и индексу дерева
 {
     double dx = (global_box.bottom_right().x - global_box.bottom_left().x) / config.Nx;
     double dy = (global_box.top_left().y - global_box.bottom_left().y) / config.Ny;
     size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
     size_t discrete_coord_y = (size_t)id_ % config.Ny;
-    return cellBox({ global_box.bottom_left().x + discrete_coord_x * dx,global_box.bottom_left().y + discrete_coord_y * dy }, 
+    return CellBox({ global_box.bottom_left().x + discrete_coord_x * dx,global_box.bottom_left().y + discrete_coord_y * dy }, 
         { global_box.bottom_left().x + (discrete_coord_x + 1) * dx,global_box.bottom_left().y + (discrete_coord_y + 1) * dy });
 }
 
-quadTreeId quadTree::calcNeighbourTreeId(Neighbour n) const //вычисление id соседнего дерева по id текущего
+quadTreeId QuadTree::calcNeighbourTreeId(Neighbour n) const //вычисление id соседнего дерева по id текущего
 {
     quadTreeId ret = null;
     size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
@@ -188,7 +188,7 @@ quadTreeId quadTree::calcNeighbourTreeId(Neighbour n) const //вычисление id сосе
     }
     return ret;
 }
-quadTreeId quadTree::calcNeighbour12TreeId(Neighbour12 n12) const
+quadTreeId QuadTree::calcNeighbour12TreeId(Neighbour12 n12) const
 {
     quadTreeId ret = null;
     size_t discrete_coord_x = (size_t)(id_ / config.Ny) % config.Nx;
@@ -233,7 +233,25 @@ quadTreeId quadTree::calcNeighbour12TreeId(Neighbour12 n12) const
     return ret;
 }
 
-cellDataId quadTree::getVacantDataId() //получение номера вакантной ячейки или создание новой в векторе data
+treeNodeId QuadTree::getVacantNodeId(int depth) //получение номера вакантной ячейки или создание новой в векторе nodes[depth]
+{
+    treeNodeId ret;
+    //если нет вакантных мест - писать в конец массива
+    if (vacant_node_ids[depth].empty())
+    {
+        ret = nodes[depth].size(); //на 1 больше номера последнего элемента
+        for (auto q : Quadrants) //можно сделать одним вызовом?
+            nodes[depth].emplace_back(); //выделение памяти, должно вызываться после .size() выше
+    }
+    else
+    {
+        ret = vacant_node_ids[depth].back(); //номер последней (по порядку маркирования) вакантной ячейки в массиве nodes[depth]
+        vacant_node_ids[depth].pop_back(); //убрать этот номер из списка вакантных ячеек
+    }
+    return ret;
+}
+
+cellDataId QuadTree::getVacantDataId() //получение номера вакантной ячейки или создание новой в векторе data
 {
     cellDataId ret;
     //если нет вакантных мест - писать в конец массива
@@ -250,14 +268,14 @@ cellDataId quadTree::getVacantDataId() //получение номера вакантной ячейки или с
     return ret;
 }
 
-treeNode& quadTree::getNodeByCoords(point p) const //ссылка на ноду по координатам
+TreeNode& QuadTree::getNodeByCoords(Point p) const //ссылка на ноду по координатам
 {
     auto& tree = forest.getTreeByCoords(p);
     return tree.nodes[FIRST_LEVEL][FIRST_ID].getChildByCoords(p);
 }
 
 
-const std::string quadTree::dump() const //дамп дерева в строку (без нод)
+const std::string QuadTree::dump() const //дамп дерева в строку (без нод)
 {
     std::stringstream ret;
     ret << "Tree " << id_ << ", " << "depth " << depth << " ( ";

@@ -19,30 +19,30 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\cellData.cpp" />
+    <ClCompile Include="src\CellData.cpp" />
     <ClCompile Include="src\output.cpp" />
-    <ClCompile Include="src\problemConfig.cpp" />
+    <ClCompile Include="src\ProblemConfig.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\globalFuncs.cpp" />
-    <ClCompile Include="src\cellBox.cpp" />
-    <ClCompile Include="src\nodeEdge.cpp" />
-    <ClCompile Include="src\nodeTag.cpp" />
-    <ClCompile Include="src\quadTree.cpp" />
-    <ClCompile Include="src\quadTreeForest.cpp" />
-    <ClCompile Include="src\treeNode.cpp" />
+    <ClCompile Include="src\CellBox.cpp" />
+    <ClCompile Include="src\NodeEdge.cpp" />
+    <ClCompile Include="src\NodeTag.cpp" />
+    <ClCompile Include="src\QuadTree.cpp" />
+    <ClCompile Include="src\QuadTreeForest.cpp" />
+    <ClCompile Include="src\TreeNode.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\cellData.h" />
+    <ClInclude Include="src\CellData.h" />
     <ClInclude Include="src\output.h" />
-    <ClInclude Include="src\problemConfig.h" />
+    <ClInclude Include="src\ProblemConfig.h" />
     <ClInclude Include="src\main.h" />
     <ClInclude Include="src\globalFuncs.h" />
-    <ClInclude Include="src\cellBox.h" />
-    <ClInclude Include="src\nodeEdge.h" />
-    <ClInclude Include="src\nodeTag.h" />
-    <ClInclude Include="src\quadTree.h" />
-    <ClInclude Include="src\quadTreeForest.h" />
-    <ClInclude Include="src\treeNode.h" />
+    <ClInclude Include="src\CellBox.h" />
+    <ClInclude Include="src\NodeEdge.h" />
+    <ClInclude Include="src\NodeTag.h" />
+    <ClInclude Include="src\QuadTree.h" />
+    <ClInclude Include="src\QuadTreeForest.h" />
+    <ClInclude Include="src\TreeNode.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="config.json" />

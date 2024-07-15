@@ -1,63 +1,38 @@
 #include "main.h"
-#include "cellBox.h"
-#include "cellData.h"
-#include "nodeEdge.h"
-#include "nodeTag.h"
-#include "quadTree.h"
-#include "treeNode.h"
+#include "CellBox.h"
+#include "CellData.h"
+#include "NodeEdge.h"
+#include "NodeTag.h"
+#include "QuadTree.h"
+#include "TreeNode.h"
 
 #include "Eigen\Dense"
 #include <iomanip>
 
-bool treeNode::isDeleted() const { return is_deleted; }
-bool treeNode::isLeaf() const { return is_leaf; }
-nodeTag treeNode::tag() const { return tag_; } //получение тэга 
-void treeNode::setTag(nodeTag t) { tag_ = t; } //задание тэга
-cellDataId treeNode::dataId() const { return dataId_; } //получение dataId
-void treeNode::setDataId(cellDataId id) { dataId_ = id; } //задание dataId
-cellBox treeNode::box() const {	return box_; } //получение box'a
-void treeNode::setBox(cellBox b) { box_ = b; } //задание box'а
-nodeTag treeNode::getNeighbour(Neighbour n) const {	return neighbours[static_cast<int>(n)]; }
-void treeNode::setNeighbour(Neighbour n, nodeTag t) { neighbours[static_cast<int>(n)] = t; }
-nodeTag treeNode::getNeighbour12(Neighbour n12) const { return neighbours12[static_cast<int>(n12)]; }
-void treeNode::setNeighbour12(Neighbour12 n12, nodeTag t) { neighbours[static_cast<int>(n12)] = t; }
+//accessors -----------------------
+NodeTag TreeNode::tag() const { return tag_; } //получение тэга 
+cellDataId TreeNode::dataId() const { return dataId_; } //получение dataId
+CellBox TreeNode::box() const {	return box_; } //получение box'a
+NodeTag TreeNode::getNeighbour(Neighbour n) const {	return neighbours[static_cast<int>(n)]; }
+NodeTag TreeNode::getNeighbour12(Neighbour n12) const { return neighbours12[static_cast<int>(n12)]; }
 
-const int ERROR_NODE_NO_DATA = -1;
-void treeNode::setData(cellData data) //запись данных
-{
-    try {
-        if (dataId_ == null)
-        {
-            throw ERROR_NODE_NO_DATA;
-        }
-        else
-        {
-            dataRef().set(data);
-        }
-    }
-    catch (int err_code)
-    {
-        cout << "setData error: " << err_code << ", tag = " << tag() << endl;
-    }
-    return;
-}
-
-cellData& treeNode::dataRef() const //ссылка на данные
+//const int ERROR_NODE_NO_DATA = -1;
+CellData& TreeNode::dataRef() const //ссылка на данные
 {
     try {
         if (dataId_ != null)
             return forest.treeRef(tag().tree()).dataRef(dataId_);
         else
-            throw ERROR_NODE_NO_DATA;
+            throw std::invalid_argument("null data reference in this node!");
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "getDataRef error: " << err_code << ", tag = " << tag() << endl;
+        cout << "getDataRef error: " << e.what() << ", tag = " << tag() << endl;
         return forest.treeRef(0).dataRef(0); //to suppress warning
     }
 }
 
-cellData treeNode::data() const //копия данных
+CellData TreeNode::data() const //копия данных
 {
     try {
         if (is_leaf)
@@ -68,12 +43,12 @@ cellData treeNode::data() const //копия данных
             }
             else
             {
-                throw ERROR_NODE_NO_DATA;
+                throw std::invalid_argument("null data reference in this node!");
             }
         }
         else //нужно собрать данные с детей
         {
-            cellData d; //инициализируется нулями
+            CellData d; //инициализируется нулями
             for (auto q : Quadrants) //рекурсивный консервативный сбор данных с детей
             {
                 d.add(childRef(q).data());
@@ -82,38 +57,21 @@ cellData treeNode::data() const //копия данных
             return d;
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "getData error: " << err_code << " " << tag() << endl;
+        cout << "getData error: " << e.what() << ", tag = " << tag() << endl;
         return forest.treeRef(0).data(0); //to suppress warning
     }
 }
 
 const int ERROR_NODE_NO_CHILDREN = -1;
-treeNode& treeNode::childRef(Quadrant q) //ссылка на ребенка по квадранту
+TreeNode& TreeNode::childRef(Quadrant q) //ссылка на ребенка по квадранту
 {
     try {
         if (childrenId_ != null)
         {
-            return nodeRef({ tag().tree(), tag().depth() + 1, childrenId_ + static_cast<int>(q) });
-        }
-        else
-        {
-            throw ERROR_NODE_NO_CHILDREN;
-        }
-    }
-    catch (int err_code)
-    {
-        cout << "node.childRef error: " << err_code << " " << tag().tree() << " " << tag().depth() + 1 << " " << childrenId_ + static_cast<int>(q) << endl;
-        return *this; //to suppress warning
-    }
-}
-const treeNode& treeNode::childRef(Quadrant q) const //(const) ссылка на ребенка для функции treeNode::data() const
-{
-    try {
-        if (childrenId_ != null)
-        {
-            return nodeRef({ tag().tree(), tag().depth() + 1, childrenId_ + static_cast<int>(q) });
+            NodeTag t = NodeTag(tag().tree(), tag().depth() + 1, (treeNodeId)(childrenId_ + static_cast<int>(q)));
+            return nodeRef(t);
         }
         else
         {
@@ -127,69 +85,115 @@ const treeNode& treeNode::childRef(Quadrant q) const //(const) ссылка на ребенка
     }
 }
 
-treeNode& treeNode::getChildByCoords(point p) //ссылка на ребенка по координатам
+const TreeNode& TreeNode::childRef(Quadrant q) const //(const) ссылка на ребенка для функции TreeNode::data() const
+{
+    try {
+        if (childrenId_ != null)
+        {
+            NodeTag t = NodeTag(tag().tree(), tag().depth() + 1, (treeNodeId)(childrenId_ + static_cast<int>(q)));
+            return nodeRef(t);
+        }
+        else
+        {
+            throw ERROR_NODE_NO_CHILDREN;
+        }
+    }
+    catch (int err_code)
+    {
+        cout << "node.childRef error: " << err_code << " " << tag().tree() << " " << tag().depth() + 1 << " " << childrenId_ + static_cast<int>(q) << endl;
+        return *this; //to suppress warning
+    }
+}
+
+TreeNode& TreeNode::getChildByCoords(Point p) //ссылка на ребенка по координатам
 {
     if (is_leaf)
         return *this;
     for (auto q : Quadrants)
     {
-        auto& child = childRef(q);
-        if (child.box().isPointInside(p))
-            return child.getChildByCoords(p);
+        auto& rchild = childRef(q);
+        if (rchild.box().isPointInside(p))
+            return rchild.getChildByCoords(p);
     }
     return nodeRef({}); //to suppress warning
 }
 
-const int ERROR_NODE_IS_DELETED = -1;
-treeNode& treeNode::nodeRef(nodeTag tag) //ссылка на ноду по тэгу
+//mutators -----------------------
+void TreeNode::setTag(const NodeTag& t) { tag_ = t; } //задание тэга
+void TreeNode::setDataId(cellDataId id) { dataId_ = id; } //задание dataId
+void TreeNode::setBox(const CellBox& b) { box_ = b; } //задание box'а
+void TreeNode::setNeighbour(Neighbour n, NodeTag t) { neighbours[static_cast<int>(n)] = t; }
+void TreeNode::setNeighbour12(Neighbour12 n12, NodeTag t) { neighbours12[static_cast<int>(n12)] = t; }
+
+void TreeNode::setData(const CellData& data) //запись данных
 {
     try {
-        treeNode& ret = forest.treeRef(tag.tree()).nodeRef(tag.depth(), tag.id());
-        if(ret.isDeleted())
+        if (dataId_ == null)
+        {
+            throw std::invalid_argument("null data reference in this node!");
+        }
+        else
+        {
+            dataRef().set(data);
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "setData error: " << e.what() << ", tag = " << tag() << endl;
+    }
+    return;
+}
+
+//inspectors -----------------------
+bool TreeNode::isDeleted() const { return is_deleted; }
+bool TreeNode::isLeaf() const { return is_leaf; }
+bool TreeNode::hasChildren() const { return childrenId_ != null; } //есть ли дети
+bool TreeNode::hasGrandChildren() const { return has_grandchildren; } //есть ли внуки
+
+//uncategorized -----------------------
+const int ERROR_NODE_IS_DELETED = -1;
+TreeNode& TreeNode::nodeRef(const NodeTag& tag) //ссылка на ноду по тэгу
+{
+    try {
+        TreeNode& rnode = forest.treeRef(tag.tree()).nodeRef(tag.depth(), tag.id());
+        if(rnode.isDeleted())
         {
             throw ERROR_NODE_IS_DELETED;
         }
+        return rnode;
     }
     catch (int err_code)
     {
-        cout << "treeNode.nodeRef error: " << err_code << ", tag: " << tag << endl;
+        cout << "TreeNode.nodeRef error: " << err_code << ", tag: " << tag << endl;
     }
     return nodeRef({}); //to suppress warning
 }
 
-double treeNode::magGradRho() const //примерный градиент плотности
+double TreeNode::magGradRho() const //примерный градиент плотности
 {
     if (!is_leaf || is_deleted)
         return 0.0;
 
-    cellData& data = dataRef();
-    if (data.rho() < DOUBLE_EPS12)
+    CellData& rd = dataRef();
+    if (rd.rho() < DOUBLE_EPS12)
         return 0.0;
     double drhosum = 0.0;
     int n12num = 0;
-    /*for (auto n12 : Neighbours12)
+    for (auto& n12 : neighbours12)
     {
-        if (hasNeighbour12(n12) && !quadTree::isTreeGhost(neighbours12[n12].tree_id))
+        if (!n12.isNull() && !forest.treeRef(n12.tree()).isGhost())
         {
-            auto& nnode = getNode(neighbours12[n12]);
-            auto& ndata = nnode.getDataRef(); //по ссылке, т.к. в neighbour12 лежат только листья
-            drhosum += fabs(data.rho() - ndata.rho()) / distance(box.center, nnode.box.center);
+            auto& rnnode = nodeRef(n12);
+            auto& rndata = rnnode.dataRef(); //можно по ссылке, т.к. в neighbour12 лежат только листья
+            drhosum += fabs(rd.rho() - rndata.rho()) / distance(box().center(), rnnode.box().center());
             n12num++;
         }
-    }*/
-
-
-    
-    
-    return 0.0;
-    
-
-
-    
-    //return drhosum / n12num / data.rho();
+    }
+    return drhosum / n12num / rd.rho();
 }
 
-std::string treeNode::dump() const //дамп ноды в строку
+//output -----------------------
+std::string TreeNode::dump() const //дамп ноды в строку
 {
     std::stringstream buffer;
     buffer << "(" << std::setw(3) << (tag_.tree() == null ? " - " : std::to_string(tag_.tree())) << ", " << tag_.depth() << ", " << std::setw(3) << (tag_.id() == null ? " - " : std::to_string(tag_.id())) << ", [" << std::setw(3) << (parentId_ == null ? " - " : std::to_string(parentId_)) << "]): ";

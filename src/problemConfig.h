@@ -1,5 +1,5 @@
-#ifndef qtCWENO_problemConfig_H //include guard
-#define qtCWENO_problemConfig_H
+#ifndef qtCWENO_ProblemConfig_H //include guard
+#define qtCWENO_ProblemConfig_H
 
 #include "main.h"
 
@@ -21,13 +21,13 @@ const bool INCLUDE_BRANCHES = true;
 const bool SKIP_BRANCHES = false;
 
 
-#include "cellBox.h"
-class problemConfig //runtime константы
+#include "CellBox.h"
+class ProblemConfig //runtime константы
 {
 public:
     size_t Nx = 0, Ny = 0; //число деревьев по осям
     int max_depth = 0; //макс глубина деревьев
-    cellBox global_box; //глобальная область расчета
+    CellBox global_box; //глобальная область расчета
 
     std::string problem = "layer"; //тип течения
     double shock_position_x = 0.0; //положение исходного скачка по оси x
@@ -61,9 +61,9 @@ public:
     bool exportEdgeFluxes = false; //выводить ли потоки (ASCII)
     bool exportPlt = true; //выводить ли бинарные .plt-файлы
 
-    problemConfig() {}; //дефолтный конструктор
-    problemConfig(std::string filename); //конструктор по json-файлу
-    friend std::ostream& operator<<(std::ostream& os, const problemConfig& c); //output overload
+    ProblemConfig() {}; //дефолтный конструктор
+    ProblemConfig(std::string filename); //конструктор по json-файлу
+    friend std::ostream& operator<<(std::ostream& os, const ProblemConfig& c); //output overload
 };
 
 #endif

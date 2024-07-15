@@ -5,9 +5,9 @@
 #include <sstream>
 
 #include "main.h"
-#include "cellBox.h"
-#include "treeNode.h"
-#include "quadTreeForest.h"
+#include "CellBox.h"
+#include "TreeNode.h"
+#include "QuadTreeForest.h"
 //#include "globalFuncs.h"
 
 double NaNcleared(double f)  //если f = NAN, возвращает -999
@@ -88,8 +88,8 @@ void exportForestEdges(std::string filename)
         if (!edge.is_deleted)
         {
             file_output << edge.dumpNeigboursVectors();
-            //auto& nnode1 = treeNode::getNode(edge.n1);
-            //auto& nnode2 = treeNode::getNode(edge.n2);
+            //auto& nnode1 = TreeNode::getNode(edge.n1);
+            //auto& nnode2 = TreeNode::getNode(edge.n2);
             //if (!nnode1.is_leaf || !nnode2.is_leaf)
                 //cout << "suspicious edge! " << edge << endl;
         }
@@ -230,7 +230,7 @@ void writeTecplotZoneDataFloat(FILE* fp)
         {
             for (int l = 0; l <= Lmax; l++)
             {
-                point p{ extrema.minima[0] + k * h + 0.5 * h, extrema.minima[1] + l * h + 0.5 * h };
+                Point p{ extrema.minima[0] + k * h + 0.5 * h, extrema.minima[1] + l * h + 0.5 * h };
                 auto& ctree = forest.getTreeByCoords(p);
                 auto& cnode = ctree.getNodeByCoords(p);
                 //auto& dcenter = cnode.dataRef();

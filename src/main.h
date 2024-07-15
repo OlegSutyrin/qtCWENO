@@ -73,12 +73,12 @@ public:
 };
 
 //глобальные объекты
-#include "problemConfig.h"
-extern problemConfig config; //конфиг задачи
+#include "ProblemConfig.h"
+extern ProblemConfig config; //конфиг задачи
 extern Globals globals; //глобальные переменные
 
-#include "quadTreeForest.h"
-extern quadTreeForest forest; //лес деревьев
+#include "QuadTreeForest.h"
+extern QuadTreeForest forest; //лес деревьев
 
 
 

@@ -1,30 +1,30 @@
 #include "main.h"
 #include "output.h"
-#include "cellBox.h"
-#include "nodeEdge.h"
-#include "treeNode.h"
-#include "quadTree.h"
-#include "quadTreeForest.h"
+#include "CellBox.h"
+#include "NodeEdge.h"
+#include "TreeNode.h"
+#include "QuadTree.h"
+#include "QuadTreeForest.h"
 
 const int ERROR_BAD_TREE_ID = -1;
 const int ERROR_TREE_BAD_COORDS = -2;
 const int ERROR_COULDNT_FIND_TREE = -3;
-void quadTreeForest::initialize() //выделение памяти под деревья
+void QuadTreeForest::initialize() //выделение памяти под деревья
 { 
     trees.reserve(config.Nx * config.Ny); //массив деревьев
     forest.toRefine.resize(config.max_depth + 1); //уровни списка ячеек для дробления (+1 для нулевого уровня) (resize увеличивает вектор и инициализирует элементы по умлочанию)
 
 }
-void quadTreeForest::addTree(quadTree tree) { trees.push_back(tree); } //доабвление дерева в список
-quadTree& quadTreeForest::getTreeByCoords(point p) //поиск дерева по координатам точки
+void QuadTreeForest::addTree(QuadTree tree) { trees.push_back(tree); } //доабвление дерева в список
+QuadTree& QuadTreeForest::getTreeByCoords(Point p) //поиск дерева по координатам точки
 {
     try {
         if (config.global_box.isPointInside(p))
         {
-            for (auto& tree : trees)
+            for (auto& rtree : trees)
             {
-                if (tree.root().box().isPointInside(p))
-                    return tree;
+                if (rtree.root().box().isPointInside(p))
+                    return rtree;
             }
             throw ERROR_COULDNT_FIND_TREE;
         }
@@ -40,7 +40,7 @@ quadTree& quadTreeForest::getTreeByCoords(point p) //поиск дерева по координатам
     }
 }
 
-quadTree& quadTreeForest::treeRef(quadTreeId id) //ссылка на дерево по id
+QuadTree& QuadTreeForest::treeRef(quadTreeId id) //ссылка на дерево по id
 {
     try {
         if (id < trees.size()) //есть такое дерево
@@ -62,7 +62,7 @@ quadTree& quadTreeForest::treeRef(quadTreeId id) //ссылка на дерево по id
 const int INDEX_MACH = TECPLOT_FIELDS_NUMBER - 3;
 const int INDEX_LEVEL = TECPLOT_FIELDS_NUMBER - 2;
 const int INDEX_MAGGRADRHO = TECPLOT_FIELDS_NUMBER - 1;
-dataExtrema quadTreeForest::getExtrema() //сбор экстремумов всех величин для вывода в Tecplot
+dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин для вывода в Tecplot
 {
     dataExtrema ret;
     double mins[TECPLOT_FIELDS_NUMBER], maxs[TECPLOT_FIELDS_NUMBER];
@@ -89,7 +89,7 @@ dataExtrema quadTreeForest::getExtrema() //сбор экстремумов всех величин для выв
             {
                 if (!cnode.isDeleted() && cnode.isLeaf())
                 {
-                    cellData& d = tree.dataRef(cnode.dataId());
+                    CellData& d = tree.dataRef(cnode.dataId());
                     int index = 2 + static_cast<int>(Equation::density); double tmp = d.rho();
                     if (mins[index] > tmp) { mins[index] = tmp; }
                     if (maxs[index] < tmp) { maxs[index] = tmp; }
@@ -131,29 +131,29 @@ dataExtrema quadTreeForest::getExtrema() //сбор экстремумов всех величин для выв
     return ret;
 }
 
-size_t quadTreeForest::activeNodesNumber() //подсчет активных (неудаленных) нод
+size_t QuadTreeForest::activeNodesNumber() //подсчет активных (неудаленных) нод
 {
     size_t ret = 0;
-    for (auto& tree : forest.trees)
+    for (auto& rtree : forest.trees)
     {
-        if (!tree.isGhost())
-            ret += tree.active_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
+        if (!rtree.isGhost())
+            ret += rtree.active_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
     }
     return ret;
 }
 
-size_t quadTreeForest::leavesNumber() //подсчет листьев
+size_t QuadTreeForest::leavesNumber() //подсчет листьев
 {
     size_t ret = 0;
-    for (auto& tree : forest.trees)
+    for (auto& rtree : forest.trees)
     {
-        if (!tree.isGhost())
-            ret += tree.leaf_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
+        if (!rtree.isGhost())
+            ret += rtree.leaf_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
     }
     return ret;
 }
 
-void quadTreeForest::exportForestScatter(std::string filename)
+void QuadTreeForest::exportForestScatter(std::string filename)
 {
     std::ofstream file_output;
     file_output.open(filename);
@@ -161,17 +161,17 @@ void quadTreeForest::exportForestScatter(std::string filename)
     file_output << "ZONE T = \"Forest scatter\" ";
     file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
 
-    for (auto& tree : forest.trees)
+    for (auto& rtree : forest.trees)
     {
-        for (auto& nodes_level : tree.nodes)
+        for (auto& rnodes_level : rtree.nodes)
         {
-            for (auto& cnode : nodes_level)
+            for (auto& rnode : rnodes_level)
             {
-                if (!cnode.isDeleted() && cnode.isLeaf())
+                if (!rnode.isDeleted() && rnode.isLeaf())
                 {
-                    cellData& d = cnode.dataRef();
-                    file_output << cnode.box().center().x << " " << cnode.box().center().y << " " << cnode.tag().depth() << " " << cnode.box().size() << " "
-                        << " " << NaNcleared(d.rho()) << " " << NaNcleared(d.u()) << " " << NaNcleared(d.v()) << " " << NaNcleared(d.p()) << " " << tree.id() << " " << NaNcleared(cnode.magGradRho());
+                    CellData& rd = rnode.dataRef();
+                    file_output << rnode.box().center().x << " " << rnode.box().center().y << " " << rnode.tag().depth() << " " << rnode.box().size() << " "
+                        << " " << NaNcleared(rd.rho()) << " " << NaNcleared(rd.u()) << " " << NaNcleared(rd.v()) << " " << NaNcleared(rd.p()) << " " << rtree.id() << " " << NaNcleared(rnode.magGradRho());
                     file_output << endl;
                 }
             }

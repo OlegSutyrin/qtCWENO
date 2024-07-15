@@ -6,10 +6,10 @@
 
 #include "main.h"
 #include "output.h"
-#include "problemConfig.h"
+#include "ProblemConfig.h"
 #include "globalFuncs.h"
-#include "cellBox.h"
-#include "quadTreeForest.h"
+#include "CellBox.h"
+#include "QuadTreeForest.h"
 
 Neighbour opposite(Neighbour n) //противоположный сосед
 {
@@ -19,6 +19,7 @@ Neighbour opposite(Neighbour n) //противоположный сосед
     case Neighbour::right: return Neighbour::left;
     case Neighbour::bottom: return Neighbour::top;
     case Neighbour::left: return Neighbour::right;
+    default: return Neighbour::top; //to suppress warning
     }
 }
 Neighbour12 opposite(Neighbour12 n12) //противоположный (относительно ребра или вершины) сосед
@@ -42,9 +43,9 @@ Neighbour12 opposite(Neighbour12 n12) //противоположный (относительно ребра или 
 }
 
 //глобальные объекты
-problemConfig config; //конфиг задачи
+ProblemConfig config; //конфиг задачи
 Globals globals; //глобальные переменные
-quadTreeForest forest; //лес деревьев
+QuadTreeForest forest; //лес деревьев
 
 
 bool validateBoxAndTrees() //проверка соответствия числа деревьев global box'у
@@ -59,16 +60,16 @@ bool validateBoxAndTrees() //проверка соответствия числа деревьев global box'у
 void addGhostLayer() //добавление слоя ghost-деревьев
 {
     double tree_h = (config.global_box.bottom_right().x - config.global_box.bottom_left().x) / config.Nx;
-    point new_bottom_left = { config.global_box.bottom_left().x - tree_h, config.global_box.bottom_left().y - tree_h };
-    point new_top_right = { config.global_box.top_right().x + tree_h, config.global_box.top_right().y + tree_h };
-    config.global_box = cellBox(new_bottom_left, new_top_right);
+    Point new_bottom_left = { config.global_box.bottom_left().x - tree_h, config.global_box.bottom_left().y - tree_h };
+    Point new_top_right = { config.global_box.top_right().x + tree_h, config.global_box.top_right().y + tree_h };
+    config.global_box = CellBox(new_bottom_left, new_top_right);
     config.Nx += 2;
     config.Ny += 2;
     return;
 }
 
-//void printNode(treeNode node) { cout << node.dump(); }
-//void printTree(quadTree tree) { cout << tree.dump(); }
+//void printNode(TreeNode node) { cout << node.dump(); }
+//void printTree(QuadTree tree) { cout << tree.dump(); }
 
 //------------------------------------- main ------------------------------------
 int main(int argc, char** argv)
@@ -79,11 +80,10 @@ int main(int argc, char** argv)
 
     //чтение конфига из файла
     std::string cfg_filename = (argc < 2 ? "config.json" : argv[1]); //если нет параметра командной строки, читать из config.json
-    config = problemConfig(cfg_filename); //TODO: валидация конфига
+    config = ProblemConfig(cfg_filename); //TODO: валидация конфига
     cout << config;
     globals.file_output << config;
     //std::cin.get(); //пауза
-
 
     //проверка соответствия global box и числа деревьев
     if (!validateBoxAndTrees())
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 
     //генерация стартовых деревьев
     for (quadTreeId id = 0; id < config.Nx * config.Ny; id++)
-        forest.addTree(quadTree(id));
+        forest.addTree(QuadTree(id));
 
     //forest.forAllTrees(printTree, INCLUDE_GHOSTS);
     //forest.forAllNodes(printNode, INCLUDE_GHOSTS, INCLUDE_BRANCHES);

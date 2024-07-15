@@ -1,21 +1,21 @@
 #include "main.h"
-#include "cellData.h"
+#include "CellData.h"
 
 
 
 //вычисления по консервативным величинам
-double cellData::rho(rkStep rk) const { return Qn[rk][static_cast<int>(Equation::density)] / y; }; //деление на y для осесимметричных координат (в декартовых y в cellData задается равным 1)
-double cellData::u(rkStep rk) const { return Qn[rk][static_cast<int>(Equation::momentum_x)] / y / Qn[rk][static_cast<int>(Equation::density)]; };
-double cellData::v(rkStep rk) const { return Qn[rk][static_cast<int>(Equation::momentum_y)] / y / Qn[rk][static_cast<int>(Equation::density)]; };
-double cellData::p(rkStep rk) const
+double CellData::rho(rkStep rk) const { return Qn[rk][static_cast<int>(Equation::density)] / y; }; //деление на y для осесимметричных координат (в декартовых y в CellData задается равным 1)
+double CellData::u(rkStep rk) const { return Qn[rk][static_cast<int>(Equation::momentum_x)] / y / Qn[rk][static_cast<int>(Equation::density)]; };
+double CellData::v(rkStep rk) const { return Qn[rk][static_cast<int>(Equation::momentum_y)] / y / Qn[rk][static_cast<int>(Equation::density)]; };
+double CellData::p(rkStep rk) const
 {
     return (config.gamma - 1.0) * (Qn[rk][static_cast<int>(Equation::energy)] / y - 0.5 * (Qn[rk][static_cast<int>(Equation::momentum_x)] * Qn[rk][static_cast<int>(Equation::momentum_x)]
         + Qn[rk][static_cast<int>(Equation::momentum_y)] * Qn[rk][static_cast<int>(Equation::momentum_y)]) / Qn[rk][static_cast<int>(Equation::density)]);
 }
-double cellData::Mach(rkStep rk) const { return sqrt((u(rk) * u(rk) + v(rk) * v(rk)) / config.gamma / p(rk) * rho(rk)); };
-double cellData::lambdaGLFX(rkStep rk) const { return fabs(u(rk)) + sqrt(config.gamma * p(rk) / rho(rk)); }; //|u|+a
-double cellData::lambdaGLFY(rkStep rk) const { return fabs(v(rk)) + sqrt(config.gamma * p(rk) / rho(rk)); }; //|v|+a
-double cellData::lambdaX(Equation eq, rkStep rk) const //depends on equation
+double CellData::Mach(rkStep rk) const { return sqrt((u(rk) * u(rk) + v(rk) * v(rk)) / config.gamma / p(rk) * rho(rk)); };
+double CellData::lambdaGLFX(rkStep rk) const { return fabs(u(rk)) + sqrt(config.gamma * p(rk) / rho(rk)); }; //|u|+a
+double CellData::lambdaGLFY(rkStep rk) const { return fabs(v(rk)) + sqrt(config.gamma * p(rk) / rho(rk)); }; //|v|+a
+double CellData::lambdaX(Equation eq, rkStep rk) const //depends on equation
 {
     switch (eq)
     {
@@ -30,7 +30,7 @@ double cellData::lambdaX(Equation eq, rkStep rk) const //depends on equation
         break;
     }
 }
-double cellData::lambdaY(Equation eq, rkStep rk) const
+double CellData::lambdaY(Equation eq, rkStep rk) const
 {
     switch (eq)
     {
@@ -45,7 +45,7 @@ double cellData::lambdaY(Equation eq, rkStep rk) const
         break;
     }
 }
-double cellData::F(Equation eq, rkStep rk) const
+double CellData::F(Equation eq, rkStep rk) const
 {
     switch (eq)
     {
@@ -68,7 +68,7 @@ double cellData::F(Equation eq, rkStep rk) const
         return 0;
     }
 }
-double cellData::G(Equation eq, rkStep rk) const
+double CellData::G(Equation eq, rkStep rk) const
 {
     switch (eq)
     {
@@ -92,22 +92,22 @@ double cellData::G(Equation eq, rkStep rk) const
     }
 }
 
-void cellData::clear() //обнуление данных
+void CellData::clear() //обнуление данных
 {
     for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
         Qn[rk].fill(0);
     //y = 1.0; не нужно?
 }
 
-void cellData::set(cellData d) //запись данных
+void CellData::set(const CellData& d) //запись данных
 {
     for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
         Qn[rk] = d.Qn[rk]; //приравнивание значений std::array
     y = d.y;
 }
-void cellData::setY(double _y) { y = _y; } //задание y
+void CellData::setY(double _y) { y = _y; } //задание y
 
-void cellData::add(cellData d) //добавление к текущим консервативным величинам
+void CellData::add(const CellData& d) //добавление к текущим консервативным величинам
 {
     for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
         for (auto& eq : Equations)
@@ -116,7 +116,7 @@ void cellData::add(cellData d) //добавление к текущим консервативным величинам
         }
 }
 
-void cellData::divide(double divisor) //деление консервативных величин
+void CellData::divide(double divisor) //деление консервативных величин
 {
     for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
         for (auto& eq : Equations)
@@ -126,7 +126,7 @@ void cellData::divide(double divisor) //деление консервативных величин
 }
 
 
-/*void cellData::flipVelocity(Neighbour n)  //изменение знака компоненты скорости
+/*void CellData::flipVelocity(Neighbour n)  //изменение знака компоненты скорости
 {
     if (n == NEIGHBOUR_LEFT || n == NEIGHBOUR_RIGHT) //горизонтальный сосед
     {
@@ -140,7 +140,7 @@ void cellData::divide(double divisor) //деление консервативных величин
     }
 }*/
 
-std::string cellData::dumpQn() const //дамп всех Qn
+std::string CellData::dumpQn() const //дамп всех Qn
 {
     std::stringstream buffer;
     buffer << "( ";
@@ -155,7 +155,7 @@ std::string cellData::dumpQn() const //дамп всех Qn
 
 }
 
-std::ostream& operator<<(std::ostream& os, cellData& d) //output operator overload
+std::ostream& operator<<(std::ostream& os, CellData& d) //output operator overload
 {
     os << "(" << d.rho() << ", " << d.u() << ", " << d.v() << ", " << d.p() << ")";
     return os;

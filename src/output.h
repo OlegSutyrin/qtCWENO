@@ -10,7 +10,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "problemConfig.h"
+#include "ProblemConfig.h"
 
 struct dataExtrema //массивы мин и макс значений для Tecplot'а
 {

@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\cellBox.cpp">
+    <ClCompile Include="src\CellBox.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
     <ClCompile Include="src\globalFuncs.cpp">
@@ -10,25 +10,25 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\quadTree.cpp">
+    <ClCompile Include="src\QuadTree.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\treeNode.cpp">
+    <ClCompile Include="src\TreeNode.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\quadTreeForest.cpp">
+    <ClCompile Include="src\QuadTreeForest.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\cellData.cpp">
+    <ClCompile Include="src\CellData.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\nodeEdge.cpp">
+    <ClCompile Include="src\NodeEdge.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\nodeTag.cpp">
+    <ClCompile Include="src\NodeTag.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="src\problemConfig.cpp">
+    <ClCompile Include="src\ProblemConfig.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
     <ClCompile Include="src\output.cpp">
@@ -36,34 +36,34 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\cellBox.h">
+    <ClInclude Include="src\CellBox.h">
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="src\main.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\quadTree.h">
+    <ClInclude Include="src\QuadTree.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\treeNode.h">
+    <ClInclude Include="src\TreeNode.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\quadTreeForest.h">
+    <ClInclude Include="src\QuadTreeForest.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\cellData.h">
+    <ClInclude Include="src\CellData.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\nodeEdge.h">
+    <ClInclude Include="src\NodeEdge.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\nodeTag.h">
+    <ClInclude Include="src\NodeTag.h">
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="src\globalFuncs.h">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="src\problemConfig.h">
+    <ClInclude Include="src\ProblemConfig.h">
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="src\output.h">

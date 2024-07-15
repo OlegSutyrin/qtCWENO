@@ -1,9 +1,9 @@
 #include "main.h"
 #include "globalFuncs.h"
-#include "cellBox.h"
-#include "nodeTag.h"
-#include "treeNode.h"
-#include "nodeEdge.h"
+#include "CellBox.h"
+#include "NodeTag.h"
+#include "TreeNode.h"
+#include "NodeEdge.h"
 
 #include <sstream>
 
