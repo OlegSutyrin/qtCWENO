@@ -261,6 +261,34 @@ void QuadTreeForest::meshRefineInitial()
     return;
 }
 
+void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для теста)
+{
+    //склеивание от мелких к крупным
+    for (auto depth = config.max_depth - 1; depth > 0; depth--)
+    {
+        for (auto& rtree : forest.trees)
+        {
+            if (rtree.isGhost()) //пропуск ghost-деревьев
+                continue;
+            if (depth <= rtree.depth())
+            {
+                for (auto& rnode : rtree.nodes[depth])
+                {
+                    if (!rnode.isDeleted() && rnode.hasChildren())
+                    {
+                        //около границы пузыря
+                        if (config.problem == "bubble")
+                        {
+                            if (!rnode.box().intersectLineEllipse(config.bubble_axle_x, config.bubble_axle_y))
+                                rnode.coarsen();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 void QuadTreeForest::meshApplyRefineList()
 {
     for (auto depth = 1; depth < config.max_depth; depth++)

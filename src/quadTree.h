@@ -33,6 +33,8 @@ public:
 
     //mutators
     void initNewLevel(); //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
+    void deleteLevelIfEmpty(int depth); //удаление уровня, если на нем не осталось ячеек
+    void vacateNodeGroup(int depth, treeNodeId id); //пометка группы нод свободной
     void vacateData(cellDataId did); //пометка ячейки данных свободной
     void incrementNodesCounter(int dpth, int amount); //изменение счетчика активных нод
     void incrementLeavesCounter(int dpth, int amount); //изменение счетчика листьев

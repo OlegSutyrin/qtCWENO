@@ -36,6 +36,7 @@ public:
     dataExtrema getExtrema(); //сбор экстремумов всех величин для вывода в Tecplot
     //edgeId getVacantEdgeId(); //получение номера вакантной ячейки или содание новой в векторе edges
     void meshRefineInitial(); //начальное дробление сетки
+    void meshCoarsenInitial(); //начальное склеивание сетки (для теста)
     void meshApplyRefineList(); //дробление ячеек из списка toRefine
 
     //output

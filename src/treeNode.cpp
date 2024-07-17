@@ -13,13 +13,13 @@
 const NodeTag& ChildrenTags::operator()(Quadrant q) const { return tags[static_cast<int>(q)]; } //() operator: тэг по квадранту
 
 //------------------------------------------------------------------- TreeNode -------------------------------------------------------------------
-NodeTag TreeNode::tag() const { return tag_; } //получение тэга 
+const NodeTag TreeNode::tag() const { return tag_; } //получение тэга 
 cellDataId TreeNode::dataId() const { return dataId_; } //получение dataId
 CellBox TreeNode::box() const {	return box_; } //получение box'a
 //QuadTree& TreeNode::treeRef() { return forest.treeRef(tag().tree()); } // ссылка на дерево, содержущее ноду
 //const QuadTree& TreeNode::treeRefConst() const { return forest.treeRefConst(tag().tree()); } //(const) ссылка на дерево, содержущее ноду
-NodeTag TreeNode::neighbour(Neighbour n) const { return neighbours[static_cast<int>(n)]; }
-NodeTag TreeNode::neighbour12(Neighbour n12) const { return neighbours12[static_cast<int>(n12)]; }
+const NodeTag TreeNode::neighbour(Neighbour n) const { return neighbours[static_cast<int>(n)]; }
+const NodeTag TreeNode::neighbour12(Neighbour n12) const { return neighbours12[static_cast<int>(n12)]; }
 
 CellData& TreeNode::dataRef() //ссылка на данные
 {
@@ -36,7 +36,7 @@ CellData& TreeNode::dataRef() //ссылка на данные
     }
     catch (const std::invalid_argument& e)
     {
-        cout << "getDataRef error: " << e.what() << ", tag = " << tag() << endl;
+        cout << "TreeNode.dataRef() error: " << e.what() << ", tag = " << tag() << endl;
         return forest.treeRef(0).dataRef(0); //to suppress warning
     }
 }
@@ -55,7 +55,7 @@ const CellData& TreeNode::dataRefConst() const
     }
     catch (const std::invalid_argument& e)
     {
-        cout << "getDataRef error: " << e.what() << ", tag = " << tag() << endl;
+        cout << "TreeNode.dataRef() const error: " << e.what() << ", tag = " << tag() << endl;
         return forest.treeRef(0).dataRef(0); //to suppress warning
     }
 }
@@ -71,7 +71,7 @@ CellData TreeNode::data() const //копия данных
             }
             else
             {
-                throw std::invalid_argument("null data reference in this node");
+                throw std::invalid_argument("null data id in this node");
             }
         }
         else //нужно собрать данные с детей
@@ -87,12 +87,11 @@ CellData TreeNode::data() const //копия данных
     }
     catch (const std::invalid_argument& e)
     {
-        cout << "getData error: " << e.what() << ", tag = " << tag() << endl;
+        cout << "TreeNode.data() error: " << e.what() << ", tag = " << tag() << endl;
         return forest.treeRef(0).data(0); //to suppress warning
     }
 }
 
-const int ERROR_NODE_NO_CHILDREN = -1;
 TreeNode& TreeNode::childRef(Quadrant q) //ссылка на ребенка по квадранту
 {
     try {
@@ -103,12 +102,12 @@ TreeNode& TreeNode::childRef(Quadrant q) //ссылка на ребенка по квадранту
         }
         else
         {
-            throw ERROR_NODE_NO_CHILDREN;
+            throw std::invalid_argument("no children");
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "node.childRef error: " << err_code << " " << tag().tree() << " " << tag().depth() + 1 << " " << childrenId_ + static_cast<int>(q) << endl;
+        cout << "node.childRef() error: " << e.what() << " " << tag().tree() << " " << tag().depth() + 1 << " " << childrenId_ + static_cast<int>(q) << endl;
         return *this; //to suppress warning
     }
 }
@@ -122,16 +121,16 @@ const TreeNode& TreeNode::childRef(Quadrant q) const //const версия
         }
         else
         {
-            throw ERROR_NODE_NO_CHILDREN;
+            throw std::invalid_argument("no children");
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "node.childRef error: " << err_code << " " << tag().tree() << " " << tag().depth() + 1 << " " << childrenId_ + static_cast<int>(q) << endl;
+        cout << "node.childRef() const error: " << e.what() << " " << tag().tree() << " " << tag().depth() + 1 << " " << childrenId_ + static_cast<int>(q) << endl;
         return *this; //to suppress warning
     }
 }
-ChildrenTags TreeNode::childrenTags()  //тэги всех детей
+const ChildrenTags TreeNode::childrenTags() const //тэги всех детей
 {
     return ChildrenTags(childRef(Quadrant::top_left).tag(), childRef(Quadrant::top_right).tag(), childRef(Quadrant::bottom_right).tag(), childRef(Quadrant::bottom_left).tag());
 }
@@ -151,10 +150,65 @@ TreeNode& TreeNode::getChildOrSelfByCoords(Point p) //ссылка на ребенка по коорд
 
 //mutators -----------------------
 void TreeNode::setTag(const NodeTag& t) { tag_ = t; } //задание тэга
+void TreeNode::markDeleted() { is_deleted = true; } //пометка удаленной
 void TreeNode::setDataId(cellDataId id) { dataId_ = id; } //задание dataId
 void TreeNode::setBox(const CellBox& b) { box_ = b; } //задание box'а
-void TreeNode::setNeighbour(Neighbour n, NodeTag t) { neighbours[static_cast<int>(n)] = t; }
-void TreeNode::setNeighbour12(Neighbour12 n12, NodeTag t) { neighbours12[static_cast<int>(n12)] = t; }
+void TreeNode::setNeighbour(Neighbour n, NodeTag ntag) //задание соседа ячейке и детям с нужной стороны
+{ 
+    neighbours[static_cast<int>(n)] = ntag; //запись себе
+    if (hasChildren()) //детям
+    {
+        switch (n) 
+        {
+        case Neighbour::top: //пришел тэг соседа сверху
+            childRef(Quadrant::top_left).setNeighbour(Neighbour::top, ntag);
+            childRef(Quadrant::top_right).setNeighbour(Neighbour::top, ntag);
+            break;
+        case Neighbour::right: //справа
+            childRef(Quadrant::top_right).setNeighbour(Neighbour::right, ntag);
+            childRef(Quadrant::bottom_right).setNeighbour(Neighbour::right, ntag);
+            break;
+        case Neighbour::bottom: //снизу
+            childRef(Quadrant::bottom_right).setNeighbour(Neighbour::bottom, ntag);
+            childRef(Quadrant::bottom_left).setNeighbour(Neighbour::bottom, ntag);
+            break;
+        case Neighbour::left: //слева
+            childRef(Quadrant::top_left).setNeighbour(Neighbour::left, ntag);
+            childRef(Quadrant::bottom_left).setNeighbour(Neighbour::left, ntag);
+            break;
+        }
+
+    }
+}
+void TreeNode::setChildrenNeighbours(Neighbour n, ChildrenTags tags) //внесение данных о соседях для детей
+{
+    if (!hasChildren()) //этот метод не должен вызываться для листьев
+    {
+        cout << "TreeNode.setChildrenNeighbours() error: no children, tag: " << tag() << endl;
+        return;
+    }
+    switch (n)
+    {
+    case Neighbour::top: //данные пришли от соседа сверху
+        childRef(Quadrant::top_left).setNeighbour(Neighbour::top, tags(Quadrant::bottom_left));
+        childRef(Quadrant::top_right).setNeighbour(Neighbour::top, tags(Quadrant::bottom_right));
+        break;
+    case Neighbour::right: //справа
+        childRef(Quadrant::top_right).setNeighbour(Neighbour::right, tags(Quadrant::top_left));
+        childRef(Quadrant::bottom_right).setNeighbour(Neighbour::right, tags(Quadrant::bottom_left));
+        break;
+    case Neighbour::bottom: //снизу
+        childRef(Quadrant::bottom_right).setNeighbour(Neighbour::bottom, tags(Quadrant::top_right));
+        childRef(Quadrant::bottom_left).setNeighbour(Neighbour::bottom, tags(Quadrant::top_left));
+        break;
+    case Neighbour::left: //слева
+        childRef(Quadrant::top_left).setNeighbour(Neighbour::left, tags(Quadrant::top_right));
+        childRef(Quadrant::bottom_left).setNeighbour(Neighbour::left, tags(Quadrant::bottom_right));
+        break;
+    }
+}
+
+void TreeNode::setNeighbour12(Neighbour12 n12, NodeTag ntag) { neighbours12[static_cast<int>(n12)] = ntag; }
 
 void TreeNode::setData(const CellData& data) //запись данных
 {
@@ -176,34 +230,23 @@ void TreeNode::setData(const CellData& data) //запись данных
 }
 void TreeNode::setGrandParency(bool status) { has_grandchildren = status; }  //отметка о наличии внуков
 
-void TreeNode::setChildrenNeighbours(Neighbour n, ChildrenTags tags) //внесение данных о соседях для детей
+void TreeNode::updateGrandParency()
 {
-    if (!hasChildren()) //этот метод не должен вызываться для листьев
+    bool no_grandchildren = true;
+    for (auto q : Quadrants)
     {
-        cout << "TreeNode.setChildrenNeighbours() error: no children, tag: " << tag() << endl;
-        return;
+        if (childRef(q).hasChildren())
+        {
+            no_grandchildren = false;
+            break;
+        }
     }
-    switch (n)
-    {
-    case Neighbour::top: //данные пришли от соседа сверху
-        childRef(Quadrant::top_left).setNeighbour(Neighbour::top, tags(Quadrant::bottom_left));
-        childRef(Quadrant::top_right).setNeighbour(Neighbour::top, tags(Quadrant::bottom_right));
-        break;
-    case Neighbour::right: //от соседа справа
-        childRef(Quadrant::top_right).setNeighbour(Neighbour::right, tags(Quadrant::top_left));
-        childRef(Quadrant::bottom_right).setNeighbour(Neighbour::right, tags(Quadrant::bottom_left));
-        break;
-    case Neighbour::bottom: //снизу
-        childRef(Quadrant::bottom_right).setNeighbour(Neighbour::bottom, tags(Quadrant::top_right));
-        childRef(Quadrant::bottom_left).setNeighbour(Neighbour::bottom, tags(Quadrant::top_left));
-        break;
-    case Neighbour::left: //слева
-        childRef(Quadrant::top_left).setNeighbour(Neighbour::left, tags(Quadrant::top_right));
-        childRef(Quadrant::bottom_left).setNeighbour(Neighbour::left, tags(Quadrant::bottom_right));
-        break;
-    }
+    if (no_grandchildren)
+        has_grandchildren = false;
+    return;
 }
-void TreeNode::setChildrenCommonNeighbour(Neighbour n, NodeTag ntag) //внесение данных об общем соседе для детей
+
+/*void TreeNode::setChildrenCommonNeighbour(Neighbour n, NodeTag ntag) //внесение данных об общем соседе для детей
 {
     if (!hasChildren()) //этот метод не должен вызываться для листьев
     {
@@ -229,7 +272,7 @@ void TreeNode::setChildrenCommonNeighbour(Neighbour n, NodeTag ntag) //внесение 
         childRef(Quadrant::bottom_left).setNeighbour(Neighbour::left, ntag);
         break;
     }
-}
+}*/
 
 int TreeNode::markToRefine() //пометка ячейки к дроблению
 {
@@ -310,8 +353,8 @@ int TreeNode::refine() //дробление ячейки
     rtree.vacateData(dataId_);
     dataId_ = null; //данных для этой ячейки более нет, есть только для детей
     rtree.incrementNodesCounter(tag().depth() + 1, QUADRANTS_NUM); //активных нод на следующем уровне стало на 4 больше
-    rtree.incrementLeavesCounter(tag().depth(), -1); //листьев на текущем уровне стало меньше на 1
-    rtree.incrementLeavesCounter(tag().depth() + 1, QUADRANTS_NUM); //листьев на следующем уровне стало больше на 4
+    rtree.incrementLeavesCounter(tag().depth() + 1, QUADRANTS_NUM); //листьев на следующем уровне стало на 4 больше
+    rtree.incrementLeavesCounter(tag().depth(), -1); //листьев на текущем уровне стало на 1 меньше
 
     //обновление данных о внуках родителя
     if (parentId_ != null)
@@ -344,7 +387,7 @@ int TreeNode::refine() //дробление ячейки
             }
             else //можно не посылать данные соседу-листу
             { 
-                setChildrenCommonNeighbour(n, neighbour(n)); //для детей этой ноды
+                setNeighbour(n, neighbour(n)); //для детей этой ноды
             }
         }
     }
@@ -591,11 +634,361 @@ int TreeNode::refine() //дробление ячейки
     return 0;
 }
 
+void TreeNode::gatherDataFromChildren() //сбор данных из детей для объединения
+{
+    try {
+        if (dataId_ == null)
+            throw std::invalid_argument("node is deleted");
+        else
+        {
+            auto& rd = dataRef();
+            rd.clear(); //обнуление
+            //осреднение консервативных величин из детей
+            for (auto q : Quadrants)
+            {
+                CellData cd = childRef(q).data();
+                rd.add(cd);
+            }
+            rd.divide(static_cast<double>(QUADRANTS_NUM));
+            if (config.coord_type == CoordType::axisymmetric) //внесение r в cellData для осесимметричных координат
+                rd.setY(box().center().y);
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "TreeNode.gatherDataFromChildren() error: " << e.what() << ", tag: " << tag() << endl;
+    }
+    return;
+}
+
+const int INT_ERROR_CODE_CANT_COARSEN_DELETED = -1;
+const int INT_ERROR_CODE_CANT_COARSEN_LEAF = -2;
+const int INT_ERROR_CODE_CANT_COARSEN_GRANDPARENT = -3;
+const int INT_ERROR_CODE_CANT_COARSEN_UNBALANCED = -4;
+int TreeNode::coarsen() //склейка ячейки
+{
+    //удаленные ячейки, листы или дедушек нельзя склеивать
+    if (is_deleted)
+        return INT_ERROR_CODE_CANT_COARSEN_DELETED;
+    if (is_leaf)
+        return INT_ERROR_CODE_CANT_COARSEN_LEAF;
+    if (has_grandchildren)
+        return INT_ERROR_CODE_CANT_COARSEN_GRANDPARENT;
+
+    //проверка на баланc
+    if (!forest.treeRef(tag().tree()).isGhost()) //в ghost-деревьях баланс не нужен
+    {
+        for (auto n : Neighbours)
+        {
+            if (hasNeighbour(n) && nodeRef(neighbour(n)).hasGrandChildren(opposite(n))) //у соседа есть внуки с ближней стороны
+            {
+                    return INT_ERROR_CODE_CANT_COARSEN_UNBALANCED;
+            }
+        }
+    }
+
+    auto& rtree = forest.treeRef(tag().tree());
+    //получение номера ячейки данных для текущей ноды и сбор данных в неё
+    dataId_ = rtree.getVacantDataId();
+    gatherDataFromChildren();
+
+    //обновление данных в соседних ячейках
+    for (auto n : Neighbours)
+    {
+        if (hasNeighbour(n))
+        {
+            nodeRef(neighbour(n)).setNeighbour(opposite(n), tag());
+        }
+    }
+
+    /*
+    auto& cTL = getChild(TOP_LEFT);
+    auto& cTR = getChild(TOP_RIGHT);
+    auto& cBR = getChild(BOTTOM_RIGHT);
+    auto& cBL = getChild(BOTTOM_LEFT);
+    auto index = N12_TOP_LEFT;
+    if (cTL.hasNeighbour12(index))
+    {
+        if (cTL.neighbours12[index] == cTR.neighbours12[index]) //сосед крупнее детей данной ячейки
+        {
+            auto& nTL = getNode(cTL.neighbours12[index]);
+            nTL.updateNeighbour12(Opposites12[Nexts12[index]], tag()); //обновление для соседа
+            nTL.updateNeighbour12(Opposites12[index], {}); //запись "null"
+            updateNeighbour12(index, cTL.neighbours12[index]); //для данной ячейки
+            updateNeighbour12(Nexts12[index], {});
+        }
+        else //соседи того же размера, что дети данной ноды
+        {
+            auto& nTL = getNode(cTL.neighbours12[index]);
+            auto& nTR = getNode(cTR.neighbours12[index]);
+            nTL.updateNeighbour12(Opposites12[Nexts12[index]], tag()); //для соседей
+            nTR.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            updateNeighbour12(index, cTL.neighbours12[index]); //для данной ячейки
+            updateNeighbour12(Nexts12[index], cTR.neighbours12[index]);
+            nTL.updateNeighbour12(Opposites12[Prevs12[index]], {}); //диагонали
+            nTR.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
+        }
+    }
+    index = N12_DIAG_TOP_RIGHT;
+    if (cTR.hasNeighbour12(index))
+    {
+        auto& nDTR = getNode(cTR.neighbours12[index]);
+        nDTR.updateNeighbour12(Opposites12[index], tag());
+        updateNeighbour12(index, nDTR.tag());
+    }
+    index = N12_RIGHT_TOP;
+    if (cTR.hasNeighbour12(index))
+    {
+        if (cTR.neighbours12[index] == cBR.neighbours12[index])
+        {
+            auto& nTR = getNode(cTR.neighbours12[index]);
+            nTR.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            nTR.updateNeighbour12(Opposites12[index], {});
+            updateNeighbour12(index, cTR.neighbours12[index]);
+            updateNeighbour12(Nexts12[index], {});
+        }
+        else
+        {
+            auto& nTR = getNode(cTR.neighbours12[index]);
+            auto& nBR = getNode(cBR.neighbours12[index]);
+            nTR.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            nBR.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            updateNeighbour12(index, cTR.neighbours12[index]);
+            updateNeighbour12(Nexts12[index], cBR.neighbours12[index]);
+            nTR.updateNeighbour12(Opposites12[Prevs12[index]], {});
+            nBR.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
+        }
+    }
+    index = N12_DIAG_RIGHT_BOTTOM;
+    if (cBR.hasNeighbour12(index))
+    {
+        auto& nDBR = getNode(cBR.neighbours12[index]);
+        nDBR.updateNeighbour12(Opposites12[index], tag());
+        updateNeighbour12(index, nDBR.tag());
+    }
+    index = N12_BOTTOM_RIGHT;
+    if (cBR.hasNeighbour12(index))
+    {
+        if (cBR.neighbours12[index] == cBL.neighbours12[index])
+        {
+            auto& nBR = getNode(cBR.neighbours12[index]);
+            nBR.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            nBR.updateNeighbour12(Opposites12[index], {});
+            updateNeighbour12(index, cBR.neighbours12[index]);
+            updateNeighbour12(Nexts12[index], {});
+        }
+        else
+        {
+            auto& nBR = getNode(cBR.neighbours12[index]);
+            auto& nBL = getNode(cBL.neighbours12[index]);
+            nBR.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            nBL.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            updateNeighbour12(index, cBR.neighbours12[index]);
+            updateNeighbour12(Nexts12[index], cBL.neighbours12[index]);
+            nBR.updateNeighbour12(Opposites12[Prevs12[index]], {});
+            nBL.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
+        }
+    }
+    index = N12_DIAG_BOTTOM_LEFT;
+    if (cBL.hasNeighbour12(index))
+    {
+        auto& nDBL = getNode(cBL.neighbours12[index]);
+        nDBL.updateNeighbour12(Opposites12[index], tag());
+        updateNeighbour12(index, nDBL.tag());
+    }
+    index = N12_LEFT_BOTTOM;
+    if (cBL.hasNeighbour12(index))
+    {
+        if (cBL.neighbours12[index] == cTL.neighbours12[index])
+        {
+            auto& nBL = getNode(cBL.neighbours12[index]);
+            nBL.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            nBL.updateNeighbour12(Opposites12[index], {});
+            updateNeighbour12(index, cBL.neighbours12[index]);
+            updateNeighbour12(Nexts12[index], {});
+        }
+        else
+        {
+            auto& nBL = getNode(cBL.neighbours12[index]);
+            auto& nTL = getNode(cTL.neighbours12[index]);
+            nBL.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            nTL.updateNeighbour12(Opposites12[Nexts12[index]], tag());
+            updateNeighbour12(index, cBL.neighbours12[index]);
+            updateNeighbour12(Nexts12[index], cTL.neighbours12[index]);
+            nBL.updateNeighbour12(Opposites12[Prevs12[index]], {});
+            nTL.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
+        }
+    }
+    index = N12_DIAG_LEFT_TOP;
+    if (cTL.hasNeighbour12(index))
+    {
+        auto& nDTL = getNode(cTL.neighbours12[index]);
+        nDTL.updateNeighbour12(Opposites12[index], tag());
+        updateNeighbour12(index, nDTL.tag());
+    }
+
+
+    //обработка ребер
+    forest.removeEdge(cTL.edges[NEIGHBOUR_RIGHT * 2]); //индекс ребра = индекс соседа * 2
+    forest.removeEdge(cTL.edges[NEIGHBOUR_BOTTOM * 2]);
+    forest.removeEdge(cBR.edges[NEIGHBOUR_TOP * 2]);
+    forest.removeEdge(cBR.edges[NEIGHBOUR_LEFT * 2]);
+    //склеивание боковых ребер
+    for (auto n : Neighbours)
+    {
+        if (neighbours[n].id != null)
+        {
+            auto& nnode = getNode(neighbours[n]);
+            ushorty eindex = n * 2; //индекс ребра (для данной ячейки)
+            ushorty eindex_opposite = ((int)(n + 2) % 4) * 2; //индекс противоположного ребра (для соседа)
+            if (nnode.is_leaf) //если у соседа нет детей - склеиваем и обновляем записи о ребре и в ребре
+            {
+                edgeId nedgeid = null; //id ребра, в которое будет перезаписано склеенное (определяется ниже)
+                switch (n)
+                {
+                case NEIGHBOUR_TOP:
+                    nedgeid = cTL.edges[eindex];
+                    forest.updateEdge(nedgeid, neighbours[n], ctag); //перезапись данных в склеенном ребре поверх первого старого
+                    forest.removeEdge(cTR.edges[eindex]); //удаление второго ребра
+                    break;
+                case NEIGHBOUR_RIGHT:
+                    nedgeid = cTR.edges[eindex];
+                    forest.updateEdge(nedgeid, ctag, neighbours[n]);
+                    forest.removeEdge(cBR.edges[eindex]);
+                    break;
+                case NEIGHBOUR_BOTTOM:
+                    nedgeid = cBR.edges[eindex];
+                    forest.updateEdge(nedgeid, ctag, neighbours[n]);
+                    forest.removeEdge(cBL.edges[eindex]);
+                    break;
+                case NEIGHBOUR_LEFT:
+                    nedgeid = cBL.edges[eindex];
+                    forest.updateEdge(nedgeid, neighbours[n], ctag);
+                    forest.removeEdge(cTL.edges[eindex]);
+                    break;
+                }
+                edges[eindex] = nedgeid; //запись о ребре в данной ячейке
+                edges[eindex + 1] = null; //второе ребро
+                nnode.edges[eindex_opposite] = nedgeid; //в соседней ячейке
+                nnode.edges[eindex_opposite + 1] = null; //второе ребро
+            }
+            else //у соседа есть дети - только обновляем данные о ребрах и в ребрах 
+            {
+                switch (n)
+                {
+                case NEIGHBOUR_TOP:
+                    edges[eindex] = cTL.edges[eindex]; //запись ребра ребенка в данную ячейку
+                    edges[eindex + 1] = cTR.edges[eindex]; //второе ребро
+                    forest.updateEdge(edges[eindex], {}, ctag); //обновление одного тега в ребре на тег данной ячейки
+                    forest.updateEdge(edges[eindex + 1], {}, ctag); //второе ребро
+                    break;
+                case NEIGHBOUR_RIGHT:
+                    edges[eindex] = cTR.edges[eindex];
+                    edges[eindex + 1] = cBR.edges[eindex];
+                    forest.updateEdge(edges[eindex], ctag, {});
+                    forest.updateEdge(edges[eindex + 1], ctag, {});
+                    break;
+                case NEIGHBOUR_BOTTOM:
+                    edges[eindex] = cBR.edges[eindex];
+                    edges[eindex + 1] = cBL.edges[eindex];
+                    forest.updateEdge(edges[eindex], ctag, {});
+                    forest.updateEdge(edges[eindex + 1], ctag, {});
+                    break;
+                case NEIGHBOUR_LEFT:
+                    edges[eindex] = cBL.edges[eindex];
+                    edges[eindex + 1] = cTL.edges[eindex];
+                    forest.updateEdge(edges[eindex], {}, ctag);
+                    forest.updateEdge(edges[eindex + 1], {}, ctag);
+                    break;
+                }
+            }
+        }
+    }*/
+
+    //удаление детей
+    rtree.vacateNodeGroup(tag().depth()+1, childrenId_); //пометка группы ячеек для нод свободными
+    for (auto q : Quadrants)
+    {
+        auto& rchild = childRef(q);
+        rchild.markDeleted();
+        rtree.vacateData(rchild.dataId()); //пометка ячеек в массиве tree.data свободными
+    }
+    rtree.incrementNodesCounter(tag().depth() + 1, -QUADRANTS_NUM); //активных нод на следующем уровне стало на 4 меньше
+    rtree.incrementLeavesCounter(tag().depth() + 1, -QUADRANTS_NUM); //листьев на следующем уровне стало на 4 меньше
+    rtree.incrementLeavesCounter(tag().depth(), 1); //листьев на текущем уровне стало на 1 больше
+        
+    //ячейка стала листом
+    is_leaf = true;
+    childrenId_ = null;
+
+    //обновление данных о внуках родителя
+    if (parentId_ != null)
+        nodeRef(NodeTag(tag().tree(), tag().depth() - 1, parentId_)).updateGrandParency();
+
+    //удаление слоя дерева при необходимости
+    rtree.deleteLevelIfEmpty(tag().depth());
+
+    //выравнивание размера соседних ghost'ов
+    for (auto n : Neighbours)
+    {
+        if (hasNeighbour(n))
+        {
+            if (!forest.treeRef(tag().tree()).isGhost() && forest.treeRef(neighbour(n).tree()).isGhost()) //есть ghost-сосед
+            {
+                auto& rnode = nodeRef(neighbour(n));
+                if (rnode.hasChildren())
+                    rnode.coarsen();
+            }
+        }
+    }
+    return 0;
+}
+
 //inspectors -----------------------
 bool TreeNode::isDeleted() const { return is_deleted; }
 bool TreeNode::isLeaf() const { return is_leaf; }
 bool TreeNode::hasChildren() const { return childrenId_ != null; } //есть ли дети
 bool TreeNode::hasGrandChildren() const { return has_grandchildren; } //есть ли внуки
+bool TreeNode::hasGrandChildren(Neighbour n) const //есть ли внуки с определенной стороны
+{
+    if (!hasChildren())
+        return false;
+    switch (n)
+    {
+    case Neighbour::top:
+        if (childRef(Quadrant::top_left).hasChildren() ||
+            childRef(Quadrant::top_right).hasChildren())
+        {
+            return true;
+        }
+        break;
+    case Neighbour::right:
+        if (childRef(Quadrant::top_right).hasChildren() ||
+            childRef(Quadrant::bottom_right).hasChildren())
+        {
+            return true;
+        }
+        break;
+    case Neighbour::bottom:
+        if (childRef(Quadrant::bottom_right).hasChildren() ||
+            childRef(Quadrant::bottom_left).hasChildren())
+        {
+            return true;
+        }
+        break;
+    case Neighbour::left:
+        if (childRef(Quadrant::bottom_left).hasChildren() ||
+            childRef(Quadrant::top_left).hasChildren())
+        {
+            return true;
+        }
+        break;
+    default:
+        cout << "TreeNode.hasGrandChildren(Neighbour) error: invalid quadrant" << endl;
+        break;
+    }
+    return false;
+}
 bool TreeNode::hasNeighbour(Neighbour n) const //есть ли сосед по направлению
 {
     if (!neighbours[static_cast<int>(n)].isNull())

@@ -53,41 +53,45 @@ public:
     explicit TreeNode(NodeTag t, treeNodeId p, cellDataId d, CellBox b) : tag_(t), parentId_(p), dataId_(d), box_(b) {}; //конструктор по частичным данным
     
     //accessors
-    NodeTag tag() const;
+    const NodeTag tag() const;
     cellDataId dataId() const;
     CellBox box() const;
     //QuadTree& treeRef(); //ссылка на дерево, содержущее ноду TODO:разобратьс€, почему не работает (circular dependency?)
     //const QuadTree& treeRefConst() const; //const верси€
-    NodeTag neighbour(Neighbour n) const; 
-    NodeTag neighbour12(Neighbour n12) const; 
+    const NodeTag neighbour(Neighbour n) const; 
+    const NodeTag neighbour12(Neighbour n12) const; 
     CellData& dataRef(); //ссылка на данные
     const CellData& dataRefConst() const; //const верси€
     CellData data() const; //копи€ данных (с возможным сбором с детей)
     TreeNode& childRef(Quadrant q); //ссылка на ребенка по квадранту
     const TreeNode& childRef(Quadrant q) const; //const верси€
-    ChildrenTags childrenTags(); //тэги всех детей
+    const ChildrenTags childrenTags() const; //тэги всех детей
 
     TreeNode& getChildOrSelfByCoords(Point p); //ссылка на ребенка (или себ€) по координатам
 
     //mutators
     void setTag(const NodeTag& t);
+    void markDeleted(); //пометка удаленной
     void setDataId(cellDataId id);
     void setBox(const CellBox& b);
-    void setNeighbour(Neighbour n, NodeTag t);
-    void setNeighbour12(Neighbour12 n12, NodeTag t);
+    void setNeighbour(Neighbour n, NodeTag ntag); //задание соседа €чейке и дет€м с нужной стороны
+    void setChildrenNeighbours(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х дл€ детей
+    void setNeighbour12(Neighbour12 n12, NodeTag ntag);
     void setData(const CellData& data);
     void setGrandParency(bool status); //отметка о наличии внуков
-    void setChildrenNeighbours(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х дл€ детей
-    void setChildrenCommonNeighbour(Neighbour n, NodeTag ntag); //внесение данных об общем соседе дл€ детей
+    void updateGrandParency(); //обновление данных о наличии внуков после склейки ребенка
+    //void setChildrenCommonNeighbour(Neighbour n, NodeTag ntag); //внесение данных об общем соседе дл€ детей
     int markToRefine(); //пометка €чейки к дроблению
     int refine(); //дробление €чейки
-    int tryCoarsen(); //склейка €чейки
+    void gatherDataFromChildren(); //сбор данных из детей дл€ объединени€
+    int coarsen(); //склейка €чейки
 
     //inspectors
     bool isDeleted() const;
     bool isLeaf() const;
     bool hasChildren() const; //есть ли дети
     bool hasGrandChildren() const; //есть ли внуки
+    bool hasGrandChildren(Neighbour n) const; //есть ли внуки с определенной стороны
     bool hasNeighbour(Neighbour n) const; //есть ли сосед по направлению
     bool hasNeighbour12(Neighbour12 n12) const;
 

@@ -146,7 +146,7 @@ TreeNode& QuadTree::getNodeByCoords(Point p) const //ссылка на ноду по координат
 }
 
 //mutators -----------------------
-void QuadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
+void QuadTree::initNewLevel() //инициализация нового уровня дерева
 {
     std::vector<TreeNode> nodes_level;
     nodes.push_back(nodes_level); //новый слой нод
@@ -157,7 +157,25 @@ void QuadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check
     depth_++; //глубина дерева +1
     return;
 }
+void QuadTree::deleteLevelIfEmpty(int depth)
+{
+    if (depth != depth_) //попытка удалить не последний слой
+        return;
+    if (active_nodes_num[depth] == 0)
+    {
+        nodes[depth].clear(); //удаление (вакантных) нод
+        nodes[depth].shrink_to_fit(); //освобождение памяти
+        nodes.pop_back(); //удаление слоя
+        active_nodes_num.pop_back(); //удаление записи о числе активных нод на слое
+        leaf_nodes_num.pop_back(); //удаление записи о числе листьев на слое
+        vacant_node_ids[depth].clear(); //удаление всех записей о вакантных нодах на слое
+        vacant_node_ids[depth].shrink_to_fit(); //освобождение памяти 
+        vacant_node_ids.pop_back(); //удаление слоя 
+        depth--; //глубина дерева -1
+    }
+}
 
+void QuadTree::vacateNodeGroup(int depth, treeNodeId id) { vacant_node_ids[depth].push_back(id); } //пометка группы нод свободной
 void QuadTree::vacateData(cellDataId did) { vacant_data_ids.push_back(did); } //пометка ячейки данных свободной
 void QuadTree::incrementNodesCounter(int dpth, int amount) //изменение счетчика активных нод
 {

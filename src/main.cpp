@@ -105,8 +105,27 @@ int main(int argc, char** argv)
     //forest.forAllNodes(printNode, INCLUDE_GHOSTS, INCLUDE_BRANCHES);
 
     forest.meshRefineInitial();
-
     ExportForest();
+
+    const int steps = 20;
+    double dx = config.bubble_axle_x / (double)steps;
+    //double dy = config.bubble_axle_y / (double)steps;
+    for (int step = 0; step < steps; step++)
+    {
+        globals.time += 0.5 / (double)steps;
+        config.bubble_axle_x -= dx;
+        forest.meshCoarsenInitial();
+        forest.meshRefineInitial();
+        ExportForest();
+    }
+    for (int step = 0; step < steps; step++)
+    {
+        globals.time += 0.5 / (double)steps;
+        config.bubble_axle_x += dx;
+        forest.meshCoarsenInitial();
+        forest.meshRefineInitial();
+        ExportForest();
+    }
 
     auto chrono_duration = std::chrono::steady_clock::now() - chrono_start;
     int duration_seconds = (int)round(std::chrono::duration<double, std::milli>(chrono_duration).count() / 1000);
