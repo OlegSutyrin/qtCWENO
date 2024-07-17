@@ -5,8 +5,17 @@
 #include "CellData.h"
 #include "NodeEdge.h"
 #include "NodeTag.h"
+#include "QuadTree.h"
 
 #include "Eigen\Dense"
+
+//struct теги детей
+struct ChildrenTags
+{
+    std::array<NodeTag, QUADRANTS_NUM> tags = {};
+    ChildrenTags(NodeTag tTL, NodeTag tTR, NodeTag tBR, NodeTag tBL) : tags({ tTL, tTR, tBR, tBL }) {};
+    const NodeTag& operator()(Quadrant q) const; //() operator: тэг по квадранту
+};
 
 //узел дерева
 class TreeNode
@@ -43,13 +52,16 @@ public:
     NodeTag tag() const;
     cellDataId dataId() const;
     CellBox box() const;
-    NodeTag getNeighbour(Neighbour n) const; 
-    NodeTag getNeighbour12(Neighbour n12) const; 
-    CellData& dataRef() const; //ссылка на данные
+    //QuadTree& treeRef(); //ссылка на дерево, содержущее ноду TODO:разобратьс€, почему не работает (circular dependency?)
+    //const QuadTree& treeRefConst() const; //const верси€
+    NodeTag neighbour(Neighbour n) const; 
+    NodeTag neighbour12(Neighbour n12) const; 
+    CellData& dataRef(); //ссылка на данные
+    const CellData& dataRefConst() const; //const верси€
     CellData data() const; //копи€ данных (с возможным сбором с детей)
     TreeNode& childRef(Quadrant q); //ссылка на ребенка по квадранту
     const TreeNode& childRef(Quadrant q) const; //const верси€
-    TreeNode& getChildByCoords(Point p); //ссылка на ребенка по координатам
+    TreeNode& getChildOrSelfByCoords(Point p); //ссылка на ребенка (или себ€) по координатам
 
     //mutators
     void setTag(const NodeTag& t);
@@ -57,26 +69,33 @@ public:
     void setBox(const CellBox& b);
     void setNeighbour(Neighbour n, NodeTag t);
     void setNeighbour12(Neighbour12 n12, NodeTag t);
-    void setData(const CellData& data); //запись данных
+    void setData(const CellData& data);
+    void setGrandParency(bool status); //отметка о наличии внуков
+    void setChildrenNeighbours(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х дл€ детей
+    int markToRefine(); //пометка €чейки к дроблению
+    int refine(); //дробление €чейки
+    int tryCoarsen(); //склейка €чейки
 
     //inspectors
     bool isDeleted() const;
     bool isLeaf() const;
     bool hasChildren() const; //есть ли дети
     bool hasGrandChildren() const; //есть ли внуки
+    bool hasNeighbour(Neighbour n) const; //есть ли сосед по направлению
+    bool hasNeighbour12(Neighbour12 n12) const;
 
-    //uncategorized
+    //other
     static TreeNode& nodeRef(const NodeTag& tag); //ссылка на ноду по тэгу (static - обща€ функци€ дл€ всех нод)
     double magGradRho() const; //примерный градиент плотности
 
     //output
     std::string dump() const; //дамп ноды в строку
+    std::string dumpNeighbourVector(Neighbour n) const; //дамп соседа в виде вектора
 
     friend class QuadTreeForest; //дл€ глобальных функций TODO:разобратьс€, как лучше реализовать вложенные циклы без нарушени€ инкапсул€ции
     friend class QuadTree;
 
-
-    /*static TreeNode& getNodeByCoords(point p); //ссылка на ноду по координатам
+    /*
     NodeTag getNodeOrChildTag(int target_depth, Quadrant quadrant) const; //поиск граничной ноды нужного уровн€ внутри данной (глубина поиска не более 1)
     bool hasEdge(ushorty etype) const; //есть ли ребро
     nodeEdge& getEdge(ushorty etype) const; //ссылка на ребро
@@ -102,5 +121,15 @@ public:
     std::string dumpNeighbour12Vector(Neighbour12 n) const;*/
 };
 
+//struct ссылки на детей
+struct ChildrenRefs
+{
+    TreeNode& rTL;
+    TreeNode& rTR;
+    TreeNode& rBR;
+    TreeNode& rBL;
+    ChildrenRefs(TreeNode& _rTL, TreeNode& _rTR, TreeNode& _rBR, TreeNode& _rBL) : rTL(_rTL), rTR(_rTR), rBR(_rBR), rBL(_rTL) {};
+    TreeNode& operator()(Quadrant q); //() operator: ссылка по квадранту
+};
 
 #endif

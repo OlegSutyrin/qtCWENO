@@ -299,23 +299,23 @@ void ExportForest() //גûגמה גסודמ כוסא (ךנמלו ghost'מג)
     {
         filename.str("");
         filename << "output_" << std::setw(3) << std::setfill('0') << globals.export_number << ".dat";
-        forest.exportForestScatter(filename.str());
+        forest.exportScatter(filename.str());
         cout << "Exported to " << filename.str() << "." << endl;
         globals.file_output << "Exported to " << filename.str() << "." << endl;
     }
-    /*if (config.exportNeighbours)
+    if (config.exportNeighbours)
     {
         filename.str("");
         filename << "output_neighbours_" << std::setw(3) << std::setfill('0') << globals.export_number << ".dat";
-        exportForestNeighbours(filename.str()); //סמסוהט
+        forest.exportNeighbours(filename.str()); //סמסוהט
         cout << "Exported to " << filename.str() << "." << endl;
         globals.file_output << "Exported to " << filename.str() << "." << endl;
     }
-    if (config.exportNeighbours12)
+    /*if (config.exportNeighbours12)
     {
         filename.str("");
         filename << "output_neighbours12_" << std::setw(3) << std::setfill('0') << globals.export_number << ".dat";
-        exportForestNeighbours12(filename.str()); //סמסוהט
+        exportForestNeighbours12(filename.str()); //סמסוהט12
         cout << "Exported to " << filename.str() << "." << endl;
         globals.file_output << "Exported to " << filename.str() << "." << endl;
     }

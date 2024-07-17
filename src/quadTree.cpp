@@ -78,31 +78,30 @@ QuadTree::QuadTree(quadTreeId _id) //конструктор дерева с одной нодой
     }
 }
 
+//accessors -----------------------
 treeNodeId QuadTree::id() const { return id_; }
-bool QuadTree::isGhost() const { return is_ghost; }
-
+int QuadTree::depth() const { return depth_; }
 const TreeNode& QuadTree::root() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизменяюему) корневую ноду
-const int ERROR_NO_NODE = -1;
+
 TreeNode& QuadTree::nodeRef(int d, treeNodeId id)
 {
     try {
-        if (d <= depth && id < nodes[d].size()) //есть такая нода (м.б. удаленная)
+        if (d <= depth_ && id < nodes[d].size()) //есть такая нода (м.б. удаленная)
         {
             return nodes[d][id];
         }
         else
         {
-            throw ERROR_NO_NODE;
+            throw std::invalid_argument("no such node in the tree");
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "tree.nodeRef() error: " << err_code << "tag: (" << id_ << ", " << d << ", " << id << ")" << endl;
+        cout << "tree.nodeRef() error: " << e.what() << "tag: (" << id_ << ", " << d << ", " << id << ")" << endl;
         return nodes[FIRST_LEVEL][FIRST_ID]; //to suppress warning
     }
 }
 
-const int ERROR_BAD_DATA_ID = -1;
 CellData& QuadTree::dataRef(cellDataId id) //ссылка на CellData по id
 {
     try {
@@ -112,16 +111,16 @@ CellData& QuadTree::dataRef(cellDataId id) //ссылка на CellData по id
         }
         else
         {
-            throw ERROR_BAD_DATA_ID;
+            throw std::invalid_argument("invalid data id");
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "tree.dataRef() error: " << err_code << "data id: " << id << endl;
+        cout << "tree.dataRef() error: " << e.what() << ", data id: " << id << endl;
         return data_[0]; //to suppress warning
     }
 }
-CellData QuadTree::data(cellDataId id) //копия CellData по id
+CellData QuadTree::data(cellDataId id) const //копия CellData по id
 {
     try {
         if (id < data_.size()) //есть такие данные (м.б. удаленные)
@@ -130,16 +129,23 @@ CellData QuadTree::data(cellDataId id) //копия CellData по id
         }
         else
         {
-            throw ERROR_BAD_DATA_ID;
+            throw std::invalid_argument("invalid data id");
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "tree.data() error: " << err_code << "data id: " << id << endl;
+        cout << "tree.data() error: " << e.what() << ", data id: " << id << endl;
         return data_[0]; //to suppress warning
     }
 }
 
+TreeNode& QuadTree::getNodeByCoords(Point p) const //ссылка на ноду по координатам
+{
+    auto& tree = forest.getTreeByCoords(p);
+    return tree.nodes[FIRST_LEVEL][FIRST_ID].getChildOrSelfByCoords(p);
+}
+
+//mutators -----------------------
 void QuadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
 {
     std::vector<TreeNode> nodes_level;
@@ -148,10 +154,26 @@ void QuadTree::initNewLevel()  //инициализация нового уровня дерева (cross-check
     leaf_nodes_num.push_back(0); //новая запись о числе листьев на слое
     std::vector<treeNodeId> vacant_node_ids_level;
     vacant_node_ids.push_back(vacant_node_ids_level); //новый слой записей о вакантных нодах
-    depth++; //глубина дерева +1
+    depth_++; //глубина дерева +1
     return;
 }
 
+void QuadTree::vacateData(cellDataId did) { vacant_data_ids.push_back(did); } //пометка ячейки данных свободной
+void QuadTree::incrementNodesCounter(int dpth, int amount) //изменение счетчика активных нод
+{
+    active_nodes_num[dpth] += amount;
+    active_nodes_num[0] += amount; //общее число нод
+}
+void QuadTree::incrementLeavesCounter(int dpth, int amount) //изменение счетчика листьев
+{
+    leaf_nodes_num[dpth] += amount;
+    leaf_nodes_num[0] += amount; //общее число листьев
+}
+
+//inspectors -----------------------
+bool QuadTree::isGhost() const { return is_ghost; }
+
+//other -----------------------
 CellBox QuadTree::generateBox(const CellBox& global_box) const //вычисление bounding box для дерева по параметрам начальной сетки и индексу дерева
 {
     double dx = (global_box.bottom_right().x - global_box.bottom_left().x) / config.Nx;
@@ -241,7 +263,7 @@ treeNodeId QuadTree::getVacantNodeId(int depth) //получение номера вакантной яче
     {
         ret = nodes[depth].size(); //на 1 больше номера последнего элемента
         for (auto q : Quadrants) //можно сделать одним вызовом?
-            nodes[depth].emplace_back(); //выделение памяти, должно вызываться после .size() выше
+            nodes[depth].emplace_back(); //выделение памяти (и инициализация?), должно вызываться после .size() выше
     }
     else
     {
@@ -268,17 +290,11 @@ cellDataId QuadTree::getVacantDataId() //получение номера вакантной ячейки или с
     return ret;
 }
 
-TreeNode& QuadTree::getNodeByCoords(Point p) const //ссылка на ноду по координатам
-{
-    auto& tree = forest.getTreeByCoords(p);
-    return tree.nodes[FIRST_LEVEL][FIRST_ID].getChildByCoords(p);
-}
-
-
+//output -----------------------
 const std::string QuadTree::dump() const //дамп дерева в строку (без нод)
 {
     std::stringstream ret;
-    ret << "Tree " << id_ << ", " << "depth " << depth << " ( ";
+    ret << "Tree " << id() << ", " << "depth " << depth() << " ( ";
     for (auto& n : active_nodes_num)
     {
         ret << n << " ";

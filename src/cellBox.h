@@ -1,9 +1,9 @@
 #ifndef qtCWENO_CellBox_H //include guard
 #define qtCWENO_CellBox_H
 
-class Point
+//struct точка на плоскости
+struct Point
 {
-public: //всё публично для простоты
     double x, y;
     bool isCloseToStraightLine(double line_coord, Orientation ori) const; //лежит ли точка внутри полосы шириной 2*(refine padding) около прямой линии
     friend std::ostream& operator<<(std::ostream& os, const Point& p); //output overload

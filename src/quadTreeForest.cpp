@@ -6,16 +6,43 @@
 #include "QuadTree.h"
 #include "QuadTreeForest.h"
 
-const int ERROR_BAD_TREE_ID = -1;
-const int ERROR_TREE_BAD_COORDS = -2;
-const int ERROR_COULDNT_FIND_TREE = -3;
-void QuadTreeForest::initialize() //выделение памяти под деревья
-{ 
-    trees.reserve(config.Nx * config.Ny); //массив деревьев
-    forest.toRefine.resize(config.max_depth + 1); //уровни списка ячеек для дробления (+1 для нулевого уровня) (resize увеличивает вектор и инициализирует элементы по умлочанию)
-
+//accessors -----------------------
+QuadTree& QuadTreeForest::treeRef(quadTreeId id) //ссылка на дерево по id
+{
+    try {
+        if (id < trees.size()) //есть такое дерево
+        {
+            return trees[id];
+        }
+        else
+        {
+            throw std::invalid_argument("invalid tree id");
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "forest.treeRef() error: " << e.what() << ", tree id: " << id << endl;
+        return trees[0]; //to suppress warning
+    }
 }
-void QuadTreeForest::addTree(QuadTree tree) { trees.push_back(tree); } //доабвление дерева в список
+const QuadTree& QuadTreeForest::treeRefConst(quadTreeId id) const //const версия
+{
+    try {
+        if (id < trees.size()) //есть такое дерево
+        {
+            return trees[id];
+        }
+        else
+        {
+            throw std::invalid_argument("invalid tree id");
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "forest.treeRef() error: " << e.what() << ", tree id: " << id << endl;
+        return trees[0]; //to suppress warning
+    }
+}
 QuadTree& QuadTreeForest::getTreeByCoords(Point p) //поиск дерева по координатам точки
 {
     try {
@@ -26,46 +53,61 @@ QuadTree& QuadTreeForest::getTreeByCoords(Point p) //поиск дерева по координатам
                 if (rtree.root().box().isPointInside(p))
                     return rtree;
             }
-            throw ERROR_COULDNT_FIND_TREE;
+            throw std::invalid_argument("no tree with such point inside");
         }
         else
         {
-            throw ERROR_TREE_BAD_COORDS;
+            throw std::invalid_argument("point outise global box");
         }
     }
-    catch (int err_code)
+    catch (const std::invalid_argument& e)
     {
-        cout << "getTreeByCoords error: " << err_code << " coords " << p << endl;
+        cout << "forest.getTreeByCoords() error: " << e.what() << ", point: " << p << endl;
         return trees[0]; //to suppress warning
     }
 }
 
-QuadTree& QuadTreeForest::treeRef(quadTreeId id) //ссылка на дерево по id
+//mutators -----------------------
+void QuadTreeForest::initialize() //выделение памяти под деревья
+{ 
+    trees.reserve(config.Nx * config.Ny); //массив деревьев
+    forest.toRefine.resize(config.max_depth + 1); //уровни списка ячеек для дробления (+1 для нулевого уровня) (resize увеличивает вектор и инициализирует элементы по умлочанию)
+
+}
+void QuadTreeForest::addTree(QuadTree tree) { trees.push_back(tree); } //добавление дерева в список
+void QuadTreeForest::addNodeToRefine(const NodeTag& t) { forest.toRefine[t.depth()].push_back(t); } //добавление ноды в список на дробление
+
+//inspectors -----------------------
+size_t QuadTreeForest::activeNodesNumber() //подсчет активных (неудаленных) нод
 {
-    try {
-        if (id < trees.size()) //есть такое дерево
-        {
-            return trees[id];
-        }
-        else
-        {
-            throw ERROR_BAD_TREE_ID;
-        }
-    }
-    catch (int err_code)
+    size_t ret = 0;
+    for (auto& rtree : forest.trees)
     {
-        cout << "forest.tree() error: " << err_code << "tree id: " << id << endl;
-        return trees[0]; //to suppress warning
+        if (!rtree.isGhost())
+            ret += rtree.active_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
     }
+    return ret;
+}
+size_t QuadTreeForest::leavesNumber() //подсчет листьев
+{
+    size_t ret = 0;
+    for (auto& rtree : forest.trees)
+    {
+        if (!rtree.isGhost())
+            ret += rtree.leaf_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
+    }
+    return ret;
 }
 
+//other -----------------------
 const int INDEX_MACH = TECPLOT_FIELDS_NUMBER - 3;
 const int INDEX_LEVEL = TECPLOT_FIELDS_NUMBER - 2;
 const int INDEX_MAGGRADRHO = TECPLOT_FIELDS_NUMBER - 1;
 dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин для вывода в Tecplot
 {
-    dataExtrema ret;
-    double mins[TECPLOT_FIELDS_NUMBER], maxs[TECPLOT_FIELDS_NUMBER];
+    dataExtrema ret{};
+    std::array<double, TECPLOT_FIELDS_NUMBER> mins;
+    std::array<double, TECPLOT_FIELDS_NUMBER> maxs;
     for (int i = 0; i < TECPLOT_FIELDS_NUMBER; i++)
     {
         mins[i] = std::numeric_limits<double>::max();
@@ -131,29 +173,8 @@ dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин для выв
     return ret;
 }
 
-size_t QuadTreeForest::activeNodesNumber() //подсчет активных (неудаленных) нод
-{
-    size_t ret = 0;
-    for (auto& rtree : forest.trees)
-    {
-        if (!rtree.isGhost())
-            ret += rtree.active_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
-    }
-    return ret;
-}
-
-size_t QuadTreeForest::leavesNumber() //подсчет листьев
-{
-    size_t ret = 0;
-    for (auto& rtree : forest.trees)
-    {
-        if (!rtree.isGhost())
-            ret += rtree.leaf_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
-    }
-    return ret;
-}
-
-void QuadTreeForest::exportForestScatter(std::string filename)
+//output -----------------------
+void QuadTreeForest::exportScatter(std::string filename)
 {
     std::ofstream file_output;
     file_output.open(filename);
@@ -180,3 +201,36 @@ void QuadTreeForest::exportForestScatter(std::string filename)
     file_output.close();
     return;
 }
+
+void QuadTreeForest::exportNeighbours(std::string filename)
+{
+    std::ofstream file_output;
+    file_output.open(filename);
+    file_output << "VARIABLES = \"x\", \"y\", \"dx\", \"dy\"" << endl;
+    file_output << "ZONE T = \"Forest neighbours\" ";
+    file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
+
+    for (auto& rtree : forest.trees)
+    {
+        for (auto& rnodes_level : rtree.nodes)
+        {
+            for (auto& rnode : rnodes_level)
+            {
+                if (!rnode.isDeleted() && rnode.isLeaf())
+                {
+                    for (auto n : Neighbours)
+                    {
+                        if (rnode.hasNeighbour(n))
+                            file_output << rnode.dumpNeighbourVector(n);
+                    }
+                }
+            }
+        }
+    }
+    file_output.close();
+    return;
+}
+
+
+
+
