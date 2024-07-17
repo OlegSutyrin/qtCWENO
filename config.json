@@ -16,7 +16,7 @@
 
   "flow type": "bubble", //тип течения: "layer", "bubble"
   "flow geometry": { //геометрия задачи
-    "shock position x": -0.2,
+    "shock position x": -0.7,
     "bubble axles": { //полуоси пузыря (центр всегда в [0,0])
       "x": 0.5,
       "y": 0.5

@@ -128,28 +128,28 @@ void exportForestEdgeFluxes(std::string filename)
 }*/
 
 //binary writing functions for .plt files
-int writeBinary4BytesInt(__int32 value, FILE* file)
+static int writeBinary4BytesInt(__int32 value, FILE* file)
 {
     __int32 dword;
     dword = value;
     fwrite(&dword, 4, 1, file);
     return 0;
 }
-int writeBinary4BytesFloat(float value, FILE* file)
+static int writeBinary4BytesFloat(float value, FILE* file)
 {
     __int32 dword;
     *((float*)&dword) = value;
     fwrite(&dword, 4, 1, file);
     return 0;
 }
-int writeBinary8BytesDouble(double value, FILE* file)
+static int writeBinary8BytesDouble(double value, FILE* file)
 {
     __int64 qword;
     *((double*)&qword) = value;
     fwrite(&qword, 8, 1, file);
     return 0;
 }
-int writeBinaryString(std::string str, FILE* file)
+static int writeBinaryString(std::string str, FILE* file)
 {
     __int32 dword;
     int p;
@@ -161,7 +161,7 @@ int writeBinaryString(std::string str, FILE* file)
     } while (dword);
     return 0;
 }
-void writeTecplotFileHeader(FILE* fp)
+static void writeTecplotFileHeader(FILE* fp)
 {
     fwrite("#!TDV111", 8, 1, fp); // од версии данных Tecplot, нужно именно "1 символ = 1 байт"
     writeBinary4BytesInt(1, fp); //byte order
@@ -178,7 +178,7 @@ void writeTecplotFileHeader(FILE* fp)
     writeBinaryString("level", fp);
     writeBinaryString("magGradRho", fp);
 }
-void writeTecplotZoneHeader(FILE* fp)
+static void writeTecplotZoneHeader(FILE* fp)
 {
     std::stringstream stream;
     writeBinary4BytesFloat(299.0f, fp); //zone marker
@@ -200,11 +200,11 @@ void writeTecplotZoneHeader(FILE* fp)
     writeBinary4BytesInt(grid_points_x, fp); //slowest index (Kmax)
     writeBinary4BytesInt(0, fp); //no auxiliary names/values
 }
-void writeTecplotFinFileHeader(FILE* fp)
+static void writeTecplotFinFileHeader(FILE* fp)
 {
     writeBinary4BytesFloat(357.0f, fp); //end of header marker
 }
-void writeTecplotZoneDataFloat(FILE* fp)
+static void writeTecplotZoneDataFloat(FILE* fp)
 {
     writeBinary4BytesFloat(299.0f, fp); //zone marker
     //коды типов данных дл€ каждой величины
@@ -270,7 +270,7 @@ void writeTecplotZoneDataFloat(FILE* fp)
         }
     }
 }
-void exportForestPlt(std::string filename)
+static void exportForestPlt(std::string filename)
 {
     FILE* fp;
     errno_t err;

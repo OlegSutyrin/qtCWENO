@@ -173,6 +173,110 @@ dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин дл€ выв
     return ret;
 }
 
+void QuadTreeForest::meshRefineInitial()
+{
+    if (config.meshRefineAll)
+    {
+        for (auto depth = 1; depth < config.max_depth; depth++)
+        {
+            cout << "Refining all, level " << depth << ": " << forest.leavesNumber();
+            for (auto& rtree : forest.trees) //проход по всем деревь€м по ссылке
+            {
+                if (rtree.isGhost()) //пропуск ghost-деревьев
+                    continue;
+                for (auto& rnode : rtree.nodes[depth])
+                    rnode.refine();
+            }
+            cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
+        }
+        return;
+    }
+    //дробление €чеек вплоть до последнего сло€
+    for (auto depth = 1; depth < config.max_depth; depth++)
+    {
+        cout << "Refining level " << depth << ": " << forest.leavesNumber();
+        for (auto& tree : forest.trees) //проход по всем деревь€м по ссылке
+        {
+            if (tree.isGhost()) //пропуск ghost-деревьев
+                continue;
+            if (depth <= tree.depth()) //есть €чейки этого уровн€
+            {
+                for (auto& rnode : tree.nodes[depth]) //проход по всем нодам на уровне
+                {
+                    bool to_refine = false;
+
+                    //около ”¬
+                    if (rnode.box().intersectLineStraight(config.shock_position_x, Orientation::vertical) ||
+                        rnode.box().bottom_left().isCloseToStraightLine(config.shock_position_x, Orientation::vertical) ||
+                        rnode.box().bottom_right().isCloseToStraightLine(config.shock_position_x, Orientation::vertical))
+                    {
+                        to_refine = true;
+                    }
+
+                    //около границ сло€
+                    if (config.problem == "layer")
+                    {
+                        //права€ граница
+                        if (rnode.box().top_left().y >= config.layer_bottom - config.meshInitialRefinePadding &&
+                            rnode.box().bottom_left().y <= config.layer_top + config.meshInitialRefinePadding &&
+                            (rnode.box().intersectLineStraight(config.layer_right, Orientation::vertical) ||
+                                rnode.box().bottom_left().isCloseToStraightLine(config.layer_right, Orientation::vertical) ||
+                                rnode.box().top_right().isCloseToStraightLine(config.layer_right, Orientation::vertical)))
+                        {
+                            to_refine = true;
+                        }
+
+                        //нижн€€ и верхн€€ границы
+                        if (rnode.box().bottom_left().x <= config.layer_right + config.meshInitialRefinePadding &&
+                            (rnode.box().intersectLineStraight(config.layer_bottom, Orientation::horizontal) ||
+                                rnode.box().bottom_left().isCloseToStraightLine(config.layer_bottom, Orientation::horizontal) ||
+                                rnode.box().top_right().isCloseToStraightLine(config.layer_bottom, Orientation::horizontal) ||
+                                rnode.box().intersectLineStraight(config.layer_top, Orientation::horizontal) ||
+                                rnode.box().bottom_left().isCloseToStraightLine(config.layer_top, Orientation::horizontal) ||
+                                rnode.box().top_right().isCloseToStraightLine(config.layer_top, Orientation::horizontal)))
+                        {
+                            to_refine = true;
+                        }
+                    }
+
+                    //около границы пузыр€
+                    if (config.problem == "bubble")
+                    {
+                        if (rnode.box().intersectLineEllipse(config.bubble_axle_x, config.bubble_axle_y))
+                            to_refine = true;
+                    }
+
+                    //пометка к разделению
+                    if (to_refine)
+                        rnode.markToRefine();
+                }
+            }
+        }
+        //разделение и балансировка
+        meshApplyRefineList();
+        cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
+    }
+    //сomputeQuadraturePoints(); //расчет точек квадратуры в ребрах
+    //updateEigenObjects(); //перерасчет матриц Eigen в €чейках
+    return;
+}
+
+void QuadTreeForest::meshApplyRefineList()
+{
+    for (auto depth = 1; depth < config.max_depth; depth++)
+    {
+        while (!forest.toRefine[depth].empty())
+        {
+            auto& rtag = forest.toRefine[depth].back();
+            forest.toRefine[depth].pop_back();
+            int err = TreeNode::nodeRef(rtag).refine();
+            if (err != 0 && err != INT_ERROR_CODE_CANT_REFINE_ALREADY_REFINED)
+                cout << "meshApplyRefineList refining error: " << err << ", tag: " << rtag << endl;
+        }
+    }
+    return;
+}
+
 //output -----------------------
 void QuadTreeForest::exportScatter(std::string filename)
 {

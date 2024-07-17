@@ -459,7 +459,7 @@ $!GlobalContour  8
 $!GlobalTwoDVector 
   UVar = 11
   VVar = 12
-  RelativeLength = 1
+  RelativeLength = 0.7
 $!GlobalScatter 
   Var = 4
   RelativeSize = 1.4
@@ -612,9 +612,9 @@ $!TwoDAxis
   XDetail
     {
     ShowAxis = No
-    RangeMin = -1.3568168137746978719
-    RangeMax = 1.3454388950009417147
-    GRSpacing = 0.5
+    RangeMin = -0.6218980131706132175
+    RangeMax = -0.31159535677678334986
+    GRSpacing = 0.05
     TickLabel
       {
       TextShape
@@ -630,9 +630,9 @@ $!TwoDAxis
   YDetail
     {
     ShowAxis = No
-    RangeMin = -0.79157899614292903667
-    RangeMax = 1.910676712632710661
-    GRSpacing = 0.5
+    RangeMin = -0.15075604255139635201
+    RangeMax = 0.15954661384243351563
+    GRSpacing = 0.05
     TickLabel
       {
       TextShape

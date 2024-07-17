@@ -9,6 +9,10 @@
 
 #include "Eigen\Dense"
 
+const int INT_ERROR_CODE_CANT_REFINE_DELETED = -1;
+const int INT_ERROR_CODE_CANT_REFINE_DEEPEST_LEVEL = -2;
+const int INT_ERROR_CODE_CANT_REFINE_ALREADY_REFINED = -3;
+
 //struct теги детей
 struct ChildrenTags
 {
@@ -61,6 +65,8 @@ public:
     CellData data() const; //копи€ данных (с возможным сбором с детей)
     TreeNode& childRef(Quadrant q); //ссылка на ребенка по квадранту
     const TreeNode& childRef(Quadrant q) const; //const верси€
+    ChildrenTags childrenTags(); //тэги всех детей
+
     TreeNode& getChildOrSelfByCoords(Point p); //ссылка на ребенка (или себ€) по координатам
 
     //mutators
@@ -72,6 +78,7 @@ public:
     void setData(const CellData& data);
     void setGrandParency(bool status); //отметка о наличии внуков
     void setChildrenNeighbours(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х дл€ детей
+    void setChildrenCommonNeighbour(Neighbour n, NodeTag ntag); //внесение данных об общем соседе дл€ детей
     int markToRefine(); //пометка €чейки к дроблению
     int refine(); //дробление €чейки
     int tryCoarsen(); //склейка €чейки
@@ -128,7 +135,7 @@ struct ChildrenRefs
     TreeNode& rTR;
     TreeNode& rBR;
     TreeNode& rBL;
-    ChildrenRefs(TreeNode& _rTL, TreeNode& _rTR, TreeNode& _rBR, TreeNode& _rBL) : rTL(_rTL), rTR(_rTR), rBR(_rBR), rBL(_rTL) {};
+    ChildrenRefs(TreeNode& _rTL, TreeNode& _rTR, TreeNode& _rBR, TreeNode& _rBL) : rTL(_rTL), rTR(_rTR), rBR(_rBR), rBL(_rBL) {};
     TreeNode& operator()(Quadrant q); //() operator: ссылка по квадранту
 };
 

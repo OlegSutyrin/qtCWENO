@@ -47,8 +47,8 @@ ProblemConfig config; //конфиг задачи
 Globals globals; //глобальные переменные
 QuadTreeForest forest; //лес деревьев
 
-
-bool validateBoxAndTrees() //проверка соответствия числа деревьев global box'у
+//"static" limits function scope to this translation unit
+static bool validateBoxAndTrees() //проверка соответствия числа деревьев global box'у
 {
     double box_ratio = (config.global_box.bottom_right().x - config.global_box.bottom_left().x) / (config.global_box.top_left().y - config.global_box.bottom_left().y);
     double trees_ratio = (double)config.Nx / (double)config.Ny;
@@ -57,7 +57,7 @@ bool validateBoxAndTrees() //проверка соответствия числа деревьев global box'у
     return true;
 }
 
-void addGhostLayer() //добавление слоя ghost-деревьев
+static void addGhostLayer() //добавление слоя ghost-деревьев
 {
     double tree_h = (config.global_box.bottom_right().x - config.global_box.bottom_left().x) / config.Nx;
     Point new_bottom_left = { config.global_box.bottom_left().x - tree_h, config.global_box.bottom_left().y - tree_h };
@@ -103,6 +103,8 @@ int main(int argc, char** argv)
 
     //forest.forAllTrees(printTree, INCLUDE_GHOSTS);
     //forest.forAllNodes(printNode, INCLUDE_GHOSTS, INCLUDE_BRANCHES);
+
+    forest.meshRefineInitial();
 
     ExportForest();
 

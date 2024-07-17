@@ -131,6 +131,10 @@ const TreeNode& TreeNode::childRef(Quadrant q) const //const версия
         return *this; //to suppress warning
     }
 }
+ChildrenTags TreeNode::childrenTags()  //тэги всех детей
+{
+    return ChildrenTags(childRef(Quadrant::top_left).tag(), childRef(Quadrant::top_right).tag(), childRef(Quadrant::bottom_right).tag(), childRef(Quadrant::bottom_left).tag());
+}
 
 TreeNode& TreeNode::getChildOrSelfByCoords(Point p) //ссылка на ребенка по координатам
 {
@@ -199,10 +203,34 @@ void TreeNode::setChildrenNeighbours(Neighbour n, ChildrenTags tags) //внесение 
         break;
     }
 }
+void TreeNode::setChildrenCommonNeighbour(Neighbour n, NodeTag ntag) //внесение данных об общем соседе для детей
+{
+    if (!hasChildren()) //этот метод не должен вызываться для листьев
+    {
+        cout << "TreeNode.setChildrenCommonNeighbour() error: no children, tag: " << tag() << endl;
+        return;
+    }
+    switch (n)
+    {
+    case Neighbour::top: //данные пришли от соседа сверху
+        childRef(Quadrant::top_left).setNeighbour(Neighbour::top, ntag);
+        childRef(Quadrant::top_right).setNeighbour(Neighbour::top, ntag);
+        break;
+    case Neighbour::right: //от соседа справа
+        childRef(Quadrant::top_right).setNeighbour(Neighbour::right, ntag);
+        childRef(Quadrant::bottom_right).setNeighbour(Neighbour::right, ntag);
+        break;
+    case Neighbour::bottom: //снизу
+        childRef(Quadrant::bottom_right).setNeighbour(Neighbour::bottom, ntag);
+        childRef(Quadrant::bottom_left).setNeighbour(Neighbour::bottom, ntag);
+        break;
+    case Neighbour::left: //слева
+        childRef(Quadrant::top_left).setNeighbour(Neighbour::left, ntag);
+        childRef(Quadrant::bottom_left).setNeighbour(Neighbour::left, ntag);
+        break;
+    }
+}
 
-const int INT_ERROR_CODE_CANT_REFINE_DELETED = -1;
-const int INT_ERROR_CODE_CANT_REFINE_DEEPEST_LEVEL = -2;
-const int INT_ERROR_CODE_CANT_REFINE_ALREADY_REFINED = -3;
 int TreeNode::markToRefine() //пометка ячейки к дроблению
 {
     //удаленные ячейки нельзя разделять
@@ -224,12 +252,15 @@ int TreeNode::markToRefine() //пометка ячейки к дроблению
     {
         for (auto& rntag : neighbours)
         {
-            //(?)проверка на ghost-овость соседа тут не нужна, т.к. его размер выравнивается ниже
-            if (!rntag.isNull() && rntag.depth() < tag().depth()) //сосед на 2+ уровня больше будущих детей данной ноды
-                nodeRef(rntag).markToRefine();
-            //выравнивание размера соседних ghost'ов
-            if (forest.treeRef(rntag.tree()).isGhost() && rntag.depth() <= tag().depth()) //ghost-сосед крупнее будущих детей данной ноды
-                nodeRef(rntag).markToRefine();
+            if (!rntag.isNull())
+            {
+                //(?)проверка на ghost-овость соседа тут не нужна, т.к. его размер выравнивается ниже
+                if (rntag.depth() < tag().depth()) //сосед на 2+ уровня больше будущих детей данной ноды
+                    nodeRef(rntag).markToRefine();
+                //выравнивание размера соседних ghost'ов
+                if (forest.treeRef(rntag.tree()).isGhost() && rntag.depth() <= tag().depth()) //ghost-сосед крупнее будущих детей данной ноды
+                    nodeRef(rntag).markToRefine();
+            }
         }
     }
     return 0;
@@ -305,12 +336,18 @@ int TreeNode::refine() //дробление ячейки
         if (hasNeighbour(n)) //есть сосед
         {
             auto& rnnode = nodeRef(neighbour(n));
-            if(rnnode.hasChildren()) //отправлять тэги детей нужно, только если у самого соседа есть дети
-                rnnode.setChildrenNeighbours(opposite(n), ctags);
+            if (rnnode.hasChildren()) //у соседа есть дети
+            {
+                rnnode.setChildrenNeighbours(opposite(n), ctags); //обновление для детей соседа
+                ChildrenTags ntags = rnnode.childrenTags();
+                setChildrenNeighbours(n, ntags); //для детей этой ноды
+            }
+            else //можно не посылать данные соседу-листу
+            { 
+                setChildrenCommonNeighbour(n, neighbour(n)); //для детей этой ноды
+            }
         }
     }
-
-
 
     /*
     //обновление данных о соседях с учетом диагональных и деления ребер
@@ -671,6 +708,9 @@ TreeNode& ChildrenRefs::operator()(Quadrant q)
     case Quadrant::top_right: return rTR;
     case Quadrant::bottom_right: return rBR;
     case Quadrant::bottom_left: return rBL;
-    default: return rTL; //to suppress warning
+    default:
+        cout << "ChildrenRefs() error: invalid quadrant" << endl;
+        return rTL; //to suppress warning
+        break;
     }
 }

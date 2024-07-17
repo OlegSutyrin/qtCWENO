@@ -81,6 +81,36 @@ bool CellBox::isPointInside(Point p) const //попадает ли точка в box (включа€ ле
     return false;
 }
 
+bool CellBox::intersectLineStraight(double line_coord, Orientation ori) const //пересекает ли €чейку пр€ма€ лини€ (горизонтальна€ или вертикальна€)
+{
+    if (ori == Orientation::horizontal)
+    {
+        if ((bottom_left().y - line_coord) * (top_right().y - line_coord) < 0)
+            return true;
+    }
+    else
+    {
+        if ((bottom_left().x - line_coord) * (top_right().x - line_coord) < 0)
+            return true;
+    }
+    return false;
+}
+
+//inline makes compiler to substitute formula in place of function call
+static inline double lsfEllipse(Point p, double axle_x, double axle_y) //level-set function for ellipse
+{
+    return p.x * p.x / axle_x / axle_x + p.y * p.y / axle_y / axle_y - 1.0;
+}
+bool CellBox::intersectLineEllipse(double axle_x, double axle_y) const //пересекает ли €чейку эллипс
+{
+    if (lsfEllipse(bottom_left(), axle_x, axle_y) * lsfEllipse(top_right(), axle_x, axle_y) < 0 ||
+        lsfEllipse(top_left(), axle_x, axle_y) * lsfEllipse(bottom_right(), axle_x, axle_y) < 0)
+    {
+        return true;
+    }
+    return false;
+}
+
 CellBox CellBox::quarterBox(Quadrant q) //получение четвертинки box'а
 {
     switch (q)

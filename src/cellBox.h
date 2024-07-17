@@ -33,6 +33,8 @@ public:
     double size() const;
     void updateCenter(); //вычисление центра по угловым точкам
     bool isPointInside(Point p) const; //попадает ли точка в box
+    bool intersectLineStraight(double line_coord, Orientation ori) const; //пересекает ли €чейку пр€ма€ лини€ (горизонтальна€ или вертикальна€)
+    bool intersectLineEllipse(double axle_x, double axle_y) const; //пересекает ли €чейку эллипс
     CellBox quarterBox(Quadrant q); //получение четвертинки box'а
 };
 

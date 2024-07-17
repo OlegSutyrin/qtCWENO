@@ -35,6 +35,8 @@ public:
     //other
     dataExtrema getExtrema(); //сбор экстремумов всех величин дл€ вывода в Tecplot
     //edgeId getVacantEdgeId(); //получение номера вакантной €чейки или содание новой в векторе edges
+    void meshRefineInitial(); //начальное дробление сетки
+    void meshApplyRefineList(); //дробление €чеек из списка toRefine
 
     //output
     void exportScatter(std::string filename); //вывод в файл (Tecplot ASCII scatter)
