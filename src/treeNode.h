@@ -59,7 +59,7 @@ public:
     //QuadTree& treeRef(); //ссылка на дерево, содержущее ноду TODO:разобраться, почему не работает (circular dependency?)
     //const QuadTree& treeRefConst() const; //const версия
     const NodeTag neighbour(Neighbour n) const; 
-    const NodeTag neighbour12(Neighbour n12) const; 
+    const NodeTag neighbour12(Neighbour12 n12) const; 
     CellData& dataRef(); //ссылка на данные
     const CellData& dataRefConst() const; //const версия
     CellData data() const; //копия данных (с возможным сбором с детей)
@@ -77,6 +77,8 @@ public:
     void setNeighbour(Neighbour n, NodeTag ntag); //задание соседа ячейке и детям с нужной стороны
     void setChildrenNeighbours(Neighbour n, ChildrenTags tags); //внесение данных о соседях для детей
     void setNeighbour12(Neighbour12 n12, NodeTag ntag);
+    void setChildrenOrSelfNeighbours12(Neighbour n, ChildrenTags tags); //внесение данных о соседях12 для себя или детей
+    void setChildrenCommonNeighbour12(Neighbour n, NodeTag ntag); //внесение данных об общем соседе12 для детей
     void setData(const CellData& data);
     void setGrandParency(bool status); //отметка о наличии внуков
     void updateGrandParency(); //обновление данных о наличии внуков после склейки ребенка

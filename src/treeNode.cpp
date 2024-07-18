@@ -19,7 +19,7 @@ CellBox TreeNode::box() const {	return box_; } //получение box'a
 //QuadTree& TreeNode::treeRef() { return forest.treeRef(tag().tree()); } // ссылка на дерево, содержущее ноду
 //const QuadTree& TreeNode::treeRefConst() const { return forest.treeRefConst(tag().tree()); } //(const) ссылка на дерево, содержущее ноду
 const NodeTag TreeNode::neighbour(Neighbour n) const { return neighbours[static_cast<int>(n)]; }
-const NodeTag TreeNode::neighbour12(Neighbour n12) const { return neighbours12[static_cast<int>(n12)]; }
+const NodeTag TreeNode::neighbour12(Neighbour12 n12) const { return neighbours12[static_cast<int>(n12)]; }
 
 CellData& TreeNode::dataRef() //ссылка на данные
 {
@@ -210,6 +210,87 @@ void TreeNode::setChildrenNeighbours(Neighbour n, ChildrenTags tags) //внесение 
 
 void TreeNode::setNeighbour12(Neighbour12 n12, NodeTag ntag) { neighbours12[static_cast<int>(n12)] = ntag; }
 
+void TreeNode::setChildrenOrSelfNeighbours12(Neighbour n, ChildrenTags tags) //внесение данных о соседях12 для себя или детей
+{
+    if (!hasChildren()) 
+    {
+        switch (n)
+        {
+        case Neighbour::top: //данные пришли от соседа сверху
+            setNeighbour12(Neighbour12::top1, tags(Quadrant::bottom_left));
+            setNeighbour12(Neighbour12::top2, tags(Quadrant::bottom_right));
+            break;
+        case Neighbour::right: //справа
+            setNeighbour12(Neighbour12::right1, tags(Quadrant::top_left));
+            setNeighbour12(Neighbour12::right2, tags(Quadrant::bottom_left));
+            break;
+        case Neighbour::bottom: //снизу
+            setNeighbour12(Neighbour12::bottom1, tags(Quadrant::top_right));
+            setNeighbour12(Neighbour12::bottom2, tags(Quadrant::top_left));
+            break;
+        case Neighbour::left: //слева
+            setNeighbour12(Neighbour12::left1, tags(Quadrant::bottom_right));
+            setNeighbour12(Neighbour12::left2, tags(Quadrant::top_right));
+            break;
+        }
+        return;
+    }
+    switch (n)
+    {
+    case Neighbour::top: //данные пришли от соседа сверху
+        childRef(Quadrant::top_left).setNeighbour12(Neighbour12::top1, tags(Quadrant::bottom_left)); //единственный сосед по стороне
+        childRef(Quadrant::top_left).setNeighbour12(Neighbour12::top_right, tags(Quadrant::bottom_right)); //по диагонали
+        childRef(Quadrant::top_right).setNeighbour12(Neighbour12::top1, tags(Quadrant::bottom_right));
+        childRef(Quadrant::top_right).setNeighbour12(Neighbour12::top_left, tags(Quadrant::bottom_left));
+        break;
+    case Neighbour::right: //справа
+        childRef(Quadrant::top_right).setNeighbour12(Neighbour12::right1, tags(Quadrant::top_left));
+        childRef(Quadrant::top_right).setNeighbour12(Neighbour12::bottom_right, tags(Quadrant::bottom_left));
+        childRef(Quadrant::bottom_right).setNeighbour12(Neighbour12::right1, tags(Quadrant::bottom_left));
+        childRef(Quadrant::bottom_right).setNeighbour12(Neighbour12::top_right, tags(Quadrant::top_left));
+        break;
+    case Neighbour::bottom: //снизу
+        childRef(Quadrant::bottom_right).setNeighbour12(Neighbour12::bottom1, tags(Quadrant::top_right));
+        childRef(Quadrant::bottom_right).setNeighbour12(Neighbour12::bottom_left, tags(Quadrant::top_left));
+        childRef(Quadrant::bottom_left).setNeighbour12(Neighbour12::bottom1, tags(Quadrant::top_left));
+        childRef(Quadrant::bottom_left).setNeighbour12(Neighbour12::bottom_right, tags(Quadrant::top_right));
+        break;
+    case Neighbour::left: //слева
+        childRef(Quadrant::top_left).setNeighbour12(Neighbour12::left1, tags(Quadrant::top_right));
+        childRef(Quadrant::top_left).setNeighbour12(Neighbour12::bottom_left, tags(Quadrant::bottom_right));
+        childRef(Quadrant::bottom_left).setNeighbour12(Neighbour12::left1, tags(Quadrant::bottom_right));
+        childRef(Quadrant::bottom_left).setNeighbour12(Neighbour12::top_left, tags(Quadrant::top_right));
+        break;
+    }
+}
+void TreeNode::setChildrenCommonNeighbour12(Neighbour n, NodeTag ntag) //внесение данных об общем соседе12 для детей
+{
+    if (!hasChildren()) //этот метод не должен вызываться для листьев
+    {
+        cout << "TreeNode.setChildrenCommonNeighbour12() error: no children, tag: " << tag() << endl;
+        return;
+    }
+    switch (n)
+    {
+    case Neighbour::top: //данные пришли от соседа сверху
+        childRef(Quadrant::top_left).setNeighbour12(Neighbour12::top1, ntag); //единственный сосед по стороне
+        childRef(Quadrant::top_right).setNeighbour12(Neighbour12::top1, ntag);
+        break;
+    case Neighbour::right: //справа
+        childRef(Quadrant::top_right).setNeighbour12(Neighbour12::right1, ntag);
+        childRef(Quadrant::bottom_right).setNeighbour12(Neighbour12::right1, ntag);
+        break;
+    case Neighbour::bottom: //снизу
+        childRef(Quadrant::bottom_right).setNeighbour12(Neighbour12::bottom1, ntag);
+        childRef(Quadrant::bottom_left).setNeighbour12(Neighbour12::bottom1, ntag);
+        break;
+    case Neighbour::left: //слева
+        childRef(Quadrant::top_left).setNeighbour12(Neighbour12::left1, ntag);
+        childRef(Quadrant::bottom_left).setNeighbour12(Neighbour12::left1, ntag);
+        break;
+    }
+}
+
 void TreeNode::setData(const CellData& data) //запись данных
 {
     try {
@@ -392,150 +473,46 @@ int TreeNode::refine() //дробление ячейки
         }
     }
 
+    //обновление данных о соседях12
+    crefs(Quadrant::top_left).setNeighbour12(Neighbour12::right1, ctags(Quadrant::top_right)); //siblings
+    crefs(Quadrant::top_left).setNeighbour12(Neighbour12::bottom1, ctags(Quadrant::bottom_left));
+    crefs(Quadrant::top_left).setNeighbour12(Neighbour12::bottom_right, ctags(Quadrant::bottom_right));
+    crefs(Quadrant::top_right).setNeighbour12(Neighbour12::left1, ctags(Quadrant::top_left));
+    crefs(Quadrant::top_right).setNeighbour12(Neighbour12::bottom1, ctags(Quadrant::bottom_right));
+    crefs(Quadrant::top_right).setNeighbour12(Neighbour12::bottom_left, ctags(Quadrant::bottom_left));
+    crefs(Quadrant::bottom_right).setNeighbour12(Neighbour12::top1, ctags(Quadrant::top_right));
+    crefs(Quadrant::bottom_right).setNeighbour12(Neighbour12::left1, ctags(Quadrant::bottom_left));
+    crefs(Quadrant::bottom_right).setNeighbour12(Neighbour12::top_left, ctags(Quadrant::top_left));
+    crefs(Quadrant::bottom_left).setNeighbour12(Neighbour12::top1, ctags(Quadrant::top_left));
+    crefs(Quadrant::bottom_left).setNeighbour12(Neighbour12::right1, ctags(Quadrant::bottom_right));
+    crefs(Quadrant::bottom_left).setNeighbour12(Neighbour12::top_right, ctags(Quadrant::top_right));
+    for (auto n : Neighbours) //соседи по сторонам
+    {
+        if (hasNeighbour(n)) //есть сосед
+        {
+            auto& rnnode = nodeRef(neighbour(n));
+            rnnode.setChildrenOrSelfNeighbours12(opposite(n), ctags); //обновление для соседа или его детей
+            if (rnnode.hasChildren()) //у соседа есть дети
+            {
+                ChildrenTags ntags = rnnode.childrenTags();
+                setChildrenOrSelfNeighbours12(n, ntags); //для детей этой ноды
+            }
+            else
+            {
+                setChildrenCommonNeighbour12(n, neighbour(n)); //для детей этой ноды
+            }
+        }
+    }    
+    for (auto n12 : Neighbours12Diagonal) //соседи по вершинам
+    {
+        if (hasNeighbour12(n12)) //есть сосед
+        {
+            auto& rnnode = nodeRef(neighbour12(n12));
+            rnnode.setNeighbour12(opposite(n12), ctags(toQuadrant(n12)));
+            crefs(toQuadrant(n12)).setNeighbour12(n12, neighbour12(n12));
+        }
+    }
     /*
-    //обновление данных о соседях с учетом диагональных и деления ребер
-    cTL.neighbours12[N12_RIGHT_TOP] = cTR.tag(); //siblings
-    cTL.neighbours12[N12_BOTTOM_RIGHT] = cBL.tag();
-    cTL.neighbours12[N12_DIAG_RIGHT_BOTTOM] = cBR.tag();
-    cTR.neighbours12[N12_LEFT_BOTTOM] = cTL.tag();
-    cTR.neighbours12[N12_BOTTOM_RIGHT] = cBR.tag();
-    cTR.neighbours12[N12_DIAG_BOTTOM_LEFT] = cBL.tag();
-    cBR.neighbours12[N12_TOP_LEFT] = cTR.tag();
-    cBR.neighbours12[N12_LEFT_BOTTOM] = cBL.tag();
-    cBR.neighbours12[N12_DIAG_LEFT_TOP] = cTL.tag();
-    cBL.neighbours12[N12_TOP_LEFT] = cTL.tag();
-    cBL.neighbours12[N12_RIGHT_TOP] = cBR.tag();
-    cBL.neighbours12[N12_DIAG_TOP_RIGHT] = cTR.tag();
-
-    auto index = N12_TOP_LEFT;
-    if (hasNeighbour12(index))
-    {
-        if (hasNeighbour12(Nexts12[index])) //соседние ячейки меньше, чем данная
-        {
-            auto& nTL = getNode(neighbours12[index]);
-            auto& nTR = getNode(neighbours12[Nexts12[index]]);
-            nTL.updateNeighbour12(Opposites12[Nexts12[index]], cTL.tag()); //обновление для соседа
-            cTL.updateNeighbour12(index, nTL.tag()); //для ребенка
-            nTR.updateNeighbour12(Opposites12[Nexts12[index]], cTR.tag());
-            cTR.updateNeighbour12(index, nTR.tag());
-            nTL.updateNeighbour12(Opposites12[Prevs12[index]], cTR.tag()); //диагонали
-            cTR.updateNeighbour12(Prevs12[index], nTL.tag());
-            nTR.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], cTL.tag());
-            cTL.updateNeighbour12(Nexts12[Nexts12[index]], nTR.tag());
-        }
-        else //сосед того же размера, что данная ячейка до дробления
-        {
-            auto& nTL = getNode(neighbours12[index]);
-            nTL.updateNeighbour12(Opposites12[index], cTL.tag()); //обновление для соседа
-            nTL.updateNeighbour12(Opposites12[Nexts12[index]], cTR.tag());
-            cTL.updateNeighbour12(index, nTL.tag()); //для детей
-            cTR.updateNeighbour12(index, nTL.tag());
-        }
-    }
-    index = N12_DIAG_TOP_RIGHT;
-    if (hasNeighbour12(index))
-    {
-        auto& nDTR = getNode(neighbours12[index]);
-        nDTR.updateNeighbour12(Opposites12[index], cTR.tag()); //обновление для соседа
-        cTR.updateNeighbour12(index, nDTR.tag()); //для ребенка
-    }
-    index = N12_RIGHT_TOP;
-    if (hasNeighbour12(index))
-    {
-        if (hasNeighbour12(Nexts12[index]))
-        {
-            auto& nTR = getNode(neighbours12[index]);
-            auto& nBR = getNode(neighbours12[Nexts12[index]]);
-            nTR.updateNeighbour12(Opposites12[Nexts12[index]], cTR.tag());
-            cTR.updateNeighbour12(index, nTR.tag());
-            nBR.updateNeighbour12(Opposites12[Nexts12[index]], cBR.tag());
-            cBR.updateNeighbour12(index, nBR.tag());
-            nTR.updateNeighbour12(Opposites12[Prevs12[index]], cBR.tag());
-            cBR.updateNeighbour12(Prevs12[index], nTR.tag());
-            nBR.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], cTR.tag());
-            cTR.updateNeighbour12(Nexts12[Nexts12[index]], nBR.tag());
-        }
-        else
-        {
-            auto& nTR = getNode(neighbours12[index]);
-            nTR.updateNeighbour12(Opposites12[index], cTR.tag());
-            nTR.updateNeighbour12(Opposites12[Nexts12[index]], cBR.tag());
-            cTR.updateNeighbour12(index, nTR.tag());
-            cBR.updateNeighbour12(index, nTR.tag());
-        }
-    }
-    index = N12_DIAG_RIGHT_BOTTOM;
-    if (hasNeighbour12(index))
-    {
-        auto& nDBR = getNode(neighbours12[index]);
-        nDBR.updateNeighbour12(Opposites12[index], cBR.tag());
-        cBR.updateNeighbour12(index, nDBR.tag());
-    }
-    index = N12_BOTTOM_RIGHT;
-    if (hasNeighbour12(index))
-    {
-        if (hasNeighbour12(Nexts12[index]))
-        {
-            auto& nBR = getNode(neighbours12[index]);
-            auto& nBL = getNode(neighbours12[Nexts12[index]]);
-            nBR.updateNeighbour12(Opposites12[Nexts12[index]], cBR.tag());
-            cBR.updateNeighbour12(index, nBR.tag());
-            nBL.updateNeighbour12(Opposites12[Nexts12[index]], cBL.tag());
-            cBL.updateNeighbour12(index, nBL.tag());
-            nBR.updateNeighbour12(Opposites12[Prevs12[index]], cBL.tag());
-            cBL.updateNeighbour12(Prevs12[index], nBR.tag());
-            nBL.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], cBR.tag());
-            cBR.updateNeighbour12(Nexts12[Nexts12[index]], nBL.tag());
-        }
-        else
-        {
-            auto& nBR = getNode(neighbours12[index]);
-            nBR.updateNeighbour12(Opposites12[index], cBR.tag());
-            nBR.updateNeighbour12(Opposites12[Nexts12[index]], cBL.tag());
-            cBR.updateNeighbour12(index, nBR.tag());
-            cBL.updateNeighbour12(index, nBR.tag());
-        }
-    }
-    index = N12_DIAG_BOTTOM_LEFT;
-    if (hasNeighbour12(index))
-    {
-        auto& nDBL = getNode(neighbours12[index]);
-        nDBL.updateNeighbour12(Opposites12[index], cBL.tag());
-        cBL.updateNeighbour12(index, nDBL.tag());
-    }
-    index = N12_LEFT_BOTTOM;
-    if (hasNeighbour12(index))
-    {
-        if (hasNeighbour12(Nexts12[index]))
-        {
-            auto& nBL = getNode(neighbours12[index]);
-            auto& nTL = getNode(neighbours12[Nexts12[index]]);
-            nBL.updateNeighbour12(Opposites12[Nexts12[index]], cBL.tag());
-            cBL.updateNeighbour12(index, nBL.tag());
-            nTL.updateNeighbour12(Opposites12[Nexts12[index]], cTL.tag());
-            cTL.updateNeighbour12(index, nTL.tag());
-            nBL.updateNeighbour12(Opposites12[Prevs12[index]], cTL.tag());
-            cTL.updateNeighbour12(Prevs12[index], nBL.tag());
-            nTL.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], cBL.tag());
-            cBL.updateNeighbour12(Nexts12[Nexts12[index]], nTL.tag());
-        }
-        else
-        {
-            auto& nBL = getNode(neighbours12[index]);
-            nBL.updateNeighbour12(Opposites12[index], cBL.tag());
-            nBL.updateNeighbour12(Opposites12[Nexts12[index]], cTL.tag());
-            cBL.updateNeighbour12(index, nBL.tag());
-            cTL.updateNeighbour12(index, nBL.tag());
-        }
-    }
-    index = N12_DIAG_LEFT_TOP;
-    if (hasNeighbour12(index))
-    {
-        auto& nDTL = getNode(neighbours12[index]);
-        nDTL.updateNeighbour12(Opposites12[index], cTL.tag());
-        cTL.updateNeighbour12(index, nDTL.tag());
-    }
-
     //обработка ребер: создание внутренних ребер
     nodeEdge nedge = { cTL.tag(), cTR.tag(), ORIENTATION_VERTICAL }; //новое ребро
     edgeId eid = forest.addEdge(nedge); //внесение в список
@@ -706,7 +683,7 @@ int TreeNode::coarsen() //склейка ячейки
     auto& cTR = getChild(TOP_RIGHT);
     auto& cBR = getChild(BOTTOM_RIGHT);
     auto& cBL = getChild(BOTTOM_LEFT);
-    auto index = N12_TOP_LEFT;
+    auto index = Neighbour12::top1;
     if (cTL.hasNeighbour12(index))
     {
         if (cTL.neighbours12[index] == cTR.neighbours12[index]) //сосед крупнее детей данной ячейки
@@ -729,14 +706,14 @@ int TreeNode::coarsen() //склейка ячейки
             nTR.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
         }
     }
-    index = N12_DIAG_TOP_RIGHT;
+    index = Neighbour12::top_right;
     if (cTR.hasNeighbour12(index))
     {
         auto& nDTR = getNode(cTR.neighbours12[index]);
         nDTR.updateNeighbour12(Opposites12[index], tag());
         updateNeighbour12(index, nDTR.tag());
     }
-    index = N12_RIGHT_TOP;
+    index = eighbour12::right1;
     if (cTR.hasNeighbour12(index))
     {
         if (cTR.neighbours12[index] == cBR.neighbours12[index])
@@ -759,14 +736,14 @@ int TreeNode::coarsen() //склейка ячейки
             nBR.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
         }
     }
-    index = N12_DIAG_RIGHT_BOTTOM;
+    index = Neighbour12::bottom_right;
     if (cBR.hasNeighbour12(index))
     {
         auto& nDBR = getNode(cBR.neighbours12[index]);
         nDBR.updateNeighbour12(Opposites12[index], tag());
         updateNeighbour12(index, nDBR.tag());
     }
-    index = N12_BOTTOM_RIGHT;
+    index = eighbour12::bottom1;
     if (cBR.hasNeighbour12(index))
     {
         if (cBR.neighbours12[index] == cBL.neighbours12[index])
@@ -789,14 +766,14 @@ int TreeNode::coarsen() //склейка ячейки
             nBL.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
         }
     }
-    index = N12_DIAG_BOTTOM_LEFT;
+    index = Neighbour12::bottom_left;
     if (cBL.hasNeighbour12(index))
     {
         auto& nDBL = getNode(cBL.neighbours12[index]);
         nDBL.updateNeighbour12(Opposites12[index], tag());
         updateNeighbour12(index, nDBL.tag());
     }
-    index = N12_LEFT_BOTTOM;
+    index = Neighbour12::left1;
     if (cBL.hasNeighbour12(index))
     {
         if (cBL.neighbours12[index] == cTL.neighbours12[index])
@@ -819,7 +796,7 @@ int TreeNode::coarsen() //склейка ячейки
             nTL.updateNeighbour12(Opposites12[Nexts12[Nexts12[index]]], {});
         }
     }
-    index = N12_DIAG_LEFT_TOP;
+    index = Neighbour12::top_left;
     if (cTL.hasNeighbour12(index))
     {
         auto& nDTL = getNode(cTL.neighbours12[index]);

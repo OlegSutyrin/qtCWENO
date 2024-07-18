@@ -41,6 +41,17 @@ Neighbour12 opposite(Neighbour12 n12) //противоположный (относительно ребра или 
     default: return Neighbour12::top1; //to suppress warning
     }
 }
+Quadrant toQuadrant(Neighbour12 n12) //квадрант по соседу12
+{
+    switch (n12)
+    {
+    case Neighbour12::top_right: return Quadrant::top_right;
+    case Neighbour12::bottom_right: return Quadrant::bottom_right;
+    case Neighbour12::bottom_left: return Quadrant::bottom_left;
+    case Neighbour12::top_left: return Quadrant::top_left;
+    default: return Quadrant::top_right; //to suppress warning
+    }
+}
 
 //глобальные объекты
 ProblemConfig config; //конфиг задачи

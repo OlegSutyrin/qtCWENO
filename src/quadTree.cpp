@@ -22,9 +22,6 @@ QuadTree::QuadTree(quadTreeId _id) //конструктор дерева с одной нодой
     root.setTag(NodeTag(id_, FIRST_LEVEL, FIRST_ID));
     CellBox root_box = generateBox(config.global_box);
     root.setBox(root_box);
-    //root.is_leaf = true; (=true по умолчанию)
-    //root.is_deleted = false; (=false по умолчанию)
-    //root.parent = null; (=null по умолчанию)
     active_nodes_num[FIRST_LEVEL] = 1; //счетчик активных нод
     leaf_nodes_num[FIRST_LEVEL] = 1; //счетчик листовых нод
 
@@ -73,9 +70,7 @@ QuadTree::QuadTree(quadTreeId _id) //конструктор дерева с одной нодой
     //выделение памяти под физические данные
     root.setDataId(getVacantDataId());
     if (config.coord_type == CoordType::axisymmetric) //внесение r в CellData для осесимметричных координат
-    {
         data_[root.dataId()].setY(root_box.center().y);
-    }
 }
 
 //accessors -----------------------
