@@ -172,12 +172,12 @@ void QuadTree::deleteLevelIfEmpty(int depth)
 
 void QuadTree::vacateNodeGroup(int depth, treeNodeId id) { vacant_node_ids[depth].push_back(id); } //пометка группы нод свободной
 void QuadTree::vacateData(cellDataId did) { vacant_data_ids.push_back(did); } //пометка €чейки данных свободной
-void QuadTree::incrementNodesCounter(int dpth, int amount) //изменение счетчика активных нод
+void QuadTree::incrementCounterNodes(int dpth, int amount) //изменение счетчика активных нод
 {
     active_nodes_num[dpth] += amount;
     active_nodes_num[0] += amount; //общее число нод
 }
-void QuadTree::incrementLeavesCounter(int dpth, int amount) //изменение счетчика листьев
+void QuadTree::incrementCounterLeaves(int dpth, int amount) //изменение счетчика листьев
 {
     leaf_nodes_num[dpth] += amount;
     leaf_nodes_num[0] += amount; //общее число листьев

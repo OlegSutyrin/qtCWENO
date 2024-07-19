@@ -76,7 +76,10 @@ public:
     void setBox(const CellBox& b);
     void setNeighbour(Neighbour n, NodeTag ntag); //задание соседа €чейке и дет€м с нужной стороны
     void setChildrenNeighbours(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х дл€ детей
+    void clearNeighbours12(); //удаление всех записей о сосед€х12 после дроблени€
     void setNeighbour12(Neighbour12 n12, NodeTag ntag);
+    void setChildrenOrSelfNeighbour12(Neighbour n, NodeTag ntag); //внесение данных о соседе12 дл€ себ€ или детей после склейки соседа
+    void setNeighbours12(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х12 дл€ себ€
     void setChildrenOrSelfNeighbours12(Neighbour n, ChildrenTags tags); //внесение данных о сосед€х12 дл€ себ€ или детей
     void setChildrenCommonNeighbour12(Neighbour n, NodeTag ntag); //внесение данных об общем соседе12 дл€ детей
     void setData(const CellData& data);
@@ -104,6 +107,7 @@ public:
     //output
     std::string dump() const; //дамп ноды в строку
     std::string dumpNeighbourVector(Neighbour n) const; //дамп соседа в виде вектора
+    std::string dumpNeighbour12Vector(Neighbour12 n12) const; //дамп соседа12 в виде вектора
 
     friend class QuadTreeForest; //дл€ глобальных функций TODO:разобратьс€, как лучше реализовать вложенные циклы без нарушени€ инкапсул€ции
     friend class QuadTree;

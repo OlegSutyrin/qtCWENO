@@ -311,15 +311,15 @@ void ExportForest() //вывод всего леса (кроме ghost'ов)
         cout << "Exported to " << filename.str() << "." << endl;
         globals.file_output << "Exported to " << filename.str() << "." << endl;
     }
-    /*if (config.exportNeighbours12)
+    if (config.exportNeighbours12)
     {
         filename.str("");
         filename << "output_neighbours12_" << std::setw(3) << std::setfill('0') << globals.export_number << ".dat";
-        exportForestNeighbours12(filename.str()); //соседи12
+        forest.exportNeighbours12(filename.str()); //соседи12
         cout << "Exported to " << filename.str() << "." << endl;
         globals.file_output << "Exported to " << filename.str() << "." << endl;
     }
-    if (config.exportEdges)
+    /*if (config.exportEdges)
     {
         filename.str("");
         filename << "output_edges_" << std::setw(3) << std::setfill('0') << globals.export_number << ".dat";

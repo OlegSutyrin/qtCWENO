@@ -180,7 +180,7 @@ void QuadTreeForest::meshRefineInitial()
         for (auto depth = 1; depth < config.max_depth; depth++)
         {
             cout << "Refining all, level " << depth << ": " << forest.leavesNumber();
-            for (auto& rtree : forest.trees) //проход по всем деревьям по ссылке
+            for (auto& rtree : trees) //проход по всем деревьям по ссылке
             {
                 if (rtree.isGhost()) //пропуск ghost-деревьев
                     continue;
@@ -195,7 +195,7 @@ void QuadTreeForest::meshRefineInitial()
     for (auto depth = 1; depth < config.max_depth; depth++)
     {
         cout << "Refining level " << depth << ": " << forest.leavesNumber();
-        for (auto& tree : forest.trees) //проход по всем деревьям по ссылке
+        for (auto& tree : trees) //проход по всем деревьям по ссылке
         {
             if (tree.isGhost()) //пропуск ghost-деревьев
                 continue;
@@ -266,7 +266,8 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для тест
     //склеивание от мелких к крупным
     for (auto depth = config.max_depth - 1; depth > 0; depth--)
     {
-        for (auto& rtree : forest.trees)
+        cout << "Coarsening level " << depth << ": " << forest.leavesNumber();
+        for (auto& rtree : trees)
         {
             if (rtree.isGhost()) //пропуск ghost-деревьев
                 continue;
@@ -286,6 +287,7 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для тест
                 }
             }
         }
+        cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
     }
 }
 
@@ -314,7 +316,7 @@ void QuadTreeForest::exportScatter(std::string filename)
     file_output << "ZONE T = \"Forest scatter\" ";
     file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
 
-    for (auto& rtree : forest.trees)
+    for (auto& rtree : trees)
     {
         for (auto& rnodes_level : rtree.nodes)
         {
@@ -342,7 +344,7 @@ void QuadTreeForest::exportNeighbours(std::string filename)
     file_output << "ZONE T = \"Forest neighbours\" ";
     file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
 
-    for (auto& rtree : forest.trees)
+    for (auto& rtree : trees)
     {
         for (auto& rnodes_level : rtree.nodes)
         {
@@ -361,6 +363,35 @@ void QuadTreeForest::exportNeighbours(std::string filename)
     }
     file_output.close();
     return;
+}
+void QuadTreeForest::exportNeighbours12(std::string filename)
+{
+    std::ofstream file_output;
+    file_output.open(filename);
+    file_output << "VARIABLES = \"x\", \"y\", \"dx\", \"dy\"" << endl;
+    file_output << "ZONE T = \"Forest neighbours12\" ";
+    file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
+
+    for (auto& rtree : trees)
+    {
+        for (auto& rnodes_level : rtree.nodes)
+        {
+            for (auto& rnode : rnodes_level)
+            {
+                if (!rnode.isDeleted() && rnode.isLeaf())
+                {
+                    for (auto n12 : Neighbours12)
+                    {
+                        if (rnode.hasNeighbour12(n12))
+                            file_output << rnode.dumpNeighbour12Vector(n12);
+                    }
+                }
+            }
+        }
+    }
+    file_output.close();
+    return;
+
 }
 
 

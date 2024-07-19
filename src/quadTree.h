@@ -36,8 +36,8 @@ public:
     void deleteLevelIfEmpty(int depth); //удаление уровн€, если на нем не осталось €чеек
     void vacateNodeGroup(int depth, treeNodeId id); //пометка группы нод свободной
     void vacateData(cellDataId did); //пометка €чейки данных свободной
-    void incrementNodesCounter(int dpth, int amount); //изменение счетчика активных нод
-    void incrementLeavesCounter(int dpth, int amount); //изменение счетчика листьев
+    void incrementCounterNodes(int dpth, int amount); //изменение счетчика активных нод
+    void incrementCounterLeaves(int dpth, int amount); //изменение счетчика листьев
 
     //inspectors
     bool isGhost() const; //€вл€етс€ ли дерево ghost'ом

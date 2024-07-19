@@ -30,15 +30,18 @@ enum class Neighbour { //соседи (используются для работы со структурой дерева)
     top, right, bottom, left, count
 };
 const Neighbour Neighbours[] = { Neighbour::top, Neighbour::right, Neighbour::bottom, Neighbour::left }; //для циклов по соседям
-Neighbour opposite(Neighbour n); //противоположный сосед
 
 enum class Neighbour12 { //соседи с учетом диагоналей и разбиения ребер (используются для ребер и CWENO)
     top1, top2, top_right, right1, right2, bottom_right, bottom1, bottom2, bottom_left, left1, left2, top_left, count
 };
 const Neighbour12 Neighbours12[] = { Neighbour12::top1, Neighbour12::top2, Neighbour12::top_right, Neighbour12::right1, Neighbour12::right2, Neighbour12::bottom_right, Neighbour12::bottom1, Neighbour12::bottom2, Neighbour12::bottom_left, Neighbour12::left1, Neighbour12::left2, Neighbour12::top_left }; //для циклов
 const Neighbour12 Neighbours12Diagonal[] = { Neighbour12::top_right, Neighbour12::bottom_right, Neighbour12::bottom_left, Neighbour12::top_left }; //для циклов по диагональным соседям
+
+//преобразования enum class'ов
+Neighbour opposite(Neighbour n); //противоположный сосед
 Neighbour12 opposite(Neighbour12 n12); //противоположный сосед12
 Quadrant toQuadrant(Neighbour12 n12); //квадрант по соседу12
+Neighbour12 toNeighbour12(Neighbour n); //сосед12 по соседу4
 
 
 enum class Equation : unsigned int { //уравнения

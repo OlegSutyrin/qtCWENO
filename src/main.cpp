@@ -52,6 +52,17 @@ Quadrant toQuadrant(Neighbour12 n12) //квадрант по соседу12
     default: return Quadrant::top_right; //to suppress warning
     }
 }
+Neighbour12 toNeighbour12(Neighbour n) //сосед12 по соседу
+{
+    switch (n)
+    {
+    case Neighbour::top: return Neighbour12::top1;
+    case Neighbour::right: return Neighbour12::right1;
+    case Neighbour::bottom: return Neighbour12::bottom1;
+    case Neighbour::left: return Neighbour12::left1;
+    default: return Neighbour12::top1; //to suppress warning
+    }
+}
 
 //глобальные объекты
 ProblemConfig config; //конфиг задачи

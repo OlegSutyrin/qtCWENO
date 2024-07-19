@@ -41,7 +41,8 @@ public:
 
     //output
     void exportScatter(std::string filename); //גûגמה ג פאיכ (Tecplot ASCII scatter)
-    void exportNeighbours(std::string filename); //גûגמה ג פאיכ (Tecplot ASCII vectors)
+    void exportNeighbours(std::string filename); //גûגמה סמסוהוי ג פאיכ (Tecplot ASCII vectors)
+    void exportNeighbours12(std::string filename); //גûגמה סמסוהוי12 ג פאיכ (Tecplot ASCII vectors)
 
     friend class QuadTree;
     friend class TreeNode;
