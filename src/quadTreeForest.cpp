@@ -173,7 +173,23 @@ dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин дл€ выв
     return ret;
 }
 
-void QuadTreeForest::meshRefineInitial()
+void QuadTreeForest::meshApplyRefineList() //дробление €чеек из списка toRefine и балансировка
+{
+    for (auto depth = 1; depth < config.max_depth; depth++)
+    {
+        while (!forest.toRefine[depth].empty())
+        {
+            auto& rtag = forest.toRefine[depth].back();
+            forest.toRefine[depth].pop_back();
+            int err = TreeNode::nodeRef(rtag).refine();
+            if (err != 0 && err != INT_ERROR_CODE_CANT_REFINE_ALREADY_REFINED)
+                cout << "meshApplyRefineList refining error: " << err << ", tag: " << rtag << endl;
+        }
+    }
+    return;
+}
+
+void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
 {
     if (config.meshRefineAll)
     {
@@ -252,7 +268,7 @@ void QuadTreeForest::meshRefineInitial()
                 }
             }
         }
-        //разделение и балансировка
+        //дробление и балансировка
         meshApplyRefineList();
         cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
     }
@@ -291,17 +307,144 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (дл€ тест
     }
 }
 
-void QuadTreeForest::meshApplyRefineList()
+void QuadTreeForest::meshUpdate() //обновление сетки
 {
+    //дробление от крупных к мелким
     for (auto depth = 1; depth < config.max_depth; depth++)
     {
-        while (!forest.toRefine[depth].empty())
+        for (auto& rtree : trees)
         {
-            auto& rtag = forest.toRefine[depth].back();
-            forest.toRefine[depth].pop_back();
-            int err = TreeNode::nodeRef(rtag).refine();
-            if (err != 0 && err != INT_ERROR_CODE_CANT_REFINE_ALREADY_REFINED)
-                cout << "meshApplyRefineList refining error: " << err << ", tag: " << rtag << endl;
+            if (rtree.isGhost()) //пропуск ghost-деревьев
+                continue;
+            if (depth <= rtree.depth()) //есть €чейки этого уровн€
+            {
+                for (auto& rnode : rtree.nodes[depth])
+                {
+                    if (!rnode.isDeleted() && rnode.magGradRho() > globals.refineLvls[depth])
+                        rnode.markToRefine();
+                }
+            }
+        }
+        //дробление и балансировка
+        meshApplyRefineList();
+    }
+
+    //склеивание от мелких к крупным
+    for (auto depth = config.max_depth - 1; depth > 0; depth--)
+    {
+        for (auto& rtree : trees)
+        {
+            if (rtree.isGhost()) //пропуск ghost-деревьев
+                continue;
+            if (depth <= rtree.depth()) //есть €чейки этого уровн€
+            {
+                for (auto& rnode : rtree.nodes[depth])
+                {
+                    if (!rnode.isDeleted() && rnode.hasChildren() && !rnode.hasGrandChildren())
+                    {
+                        double maxGradRho = 0;
+                        for (auto q : Quadrants)
+                            maxGradRho = std::max(maxGradRho, rnode.childRef(q).magGradRho());
+                        if (maxGradRho < globals.refineLvls[depth])
+                            rnode.coarsen();
+                    }
+                }
+            }
+        }
+    }
+    //сomputeQuadraturePoints(); //перерасчет точек квадратуры в ребрах
+    //updateEigenObjects(); //перерасчет матриц Eigen в €чейках
+    return;
+}
+
+void QuadTreeForest::initialCondition() //начальные услови€
+{
+    double double_gamma = config.gamma;
+    double double_shock_Mach_number = config.Mach;
+    double double_Atwood_number = config.Atwood;
+    double omega = (1.0 + double_Atwood_number) / (1.0 - double_Atwood_number);
+    double p0 = 1.0;
+    double r0 = 1.0;
+    double u0 = double_shock_Mach_number * sqrt(double_gamma); //скорость исходного скачка
+    //параметры газа за исходным скачком
+    double p1 = p0 * ((1.0 - double_gamma) / (double_gamma + 1.0) + 2.0 * double_gamma / (double_gamma + 1.0) * double_shock_Mach_number * double_shock_Mach_number);
+    double r1 = r0 / ((double_gamma - 1.0) / (double_gamma + 1.0) + 2.0 / (double_gamma + 1.0) / double_shock_Mach_number / double_shock_Mach_number);
+    double u1 = u0 * ((double_gamma - 1.0) / (double_gamma + 1.0) + 2.0 / (double_gamma + 1.0) / double_shock_Mach_number / double_shock_Mach_number);
+
+    double double_shock_x_position = config.shock_position_x;
+    double double_layer_x_right = config.layer_right;
+    double double_layer_y_bottom = config.layer_bottom;
+    double double_layer_y_top = config.layer_top;
+
+    for (auto depth = 1; depth <= config.max_depth; depth++)
+    {
+        for (auto& rtree : trees)
+        {
+            if (depth <= rtree.depth()) //есть €чейки этого уровн€
+            {
+                //проход по всем нодам на уровне
+                for (auto& rnode : rtree.nodes[depth])
+                {
+                    if (rnode.hasChildren()) //не-листь€ пропускаютс€
+                        continue;
+                    double x = rnode.box().center().x;
+                    double y = rnode.box().center().y;
+                    ConservativeVector Q = {};
+                    if (config.problem == "layer")
+                    {
+                        if (x >= double_shock_x_position)
+                        {
+                            Q.set(Equation::density, r1);
+                            Q.set(Equation::momentum_x, r1 * u1);
+                            Q.set(Equation::momentum_y, 0); //v = 0
+                            Q.set(Equation::energy, p1 / (config.gamma - 1.0) + 0.5 * r1 * (u1 * u1)); //v = 0
+                        }
+                        else
+                        {
+                            if (x <= double_layer_x_right && y >= double_layer_y_bottom && y <= double_layer_y_top)
+                                Q.set(Equation::density, omega * r0);
+                            else
+                                Q.set(Equation::density, r0);
+                            Q.set(Equation::momentum_x, Q(Equation::density) * u0);
+                            Q.set(Equation::momentum_y, 0);  //v = 0
+                            Q.set(Equation::energy, p0 / (config.gamma - 1.0) + 0.5 * Q(Equation::density) * (u0 * u0)); //v = 0
+                        }
+                    }
+                    else if (config.problem == "bubble")
+                    {
+                        if (x <= double_shock_x_position)
+                        {
+                            Q.set(Equation::density, r1);
+                            Q.set(Equation::momentum_x, r1 * (u0 - u1));
+                            Q.set(Equation::momentum_y, 0);  //v = 0
+                            Q.set(Equation::energy, p1 / (config.gamma - 1.0) + 0.5 * r1 * (u0 - u1) * (u0 - u1)); //v = 0
+                        }
+                        else
+                        {
+                            if (x * x / config.bubble_axle_x / config.bubble_axle_x + y * y / config.bubble_axle_y / config.bubble_axle_y <= 1.0)
+                                Q.set(Equation::density, omega * r0);
+                            else
+                                Q.set(Equation::density, r0);
+                            Q.set(Equation::momentum_x, 0); //u = 0
+                            Q.set(Equation::momentum_y, 0); //v = 0
+                            Q.set(Equation::energy, p0 / (config.gamma - 1.0)); //u,v = 0
+                        }
+                    }
+
+                    CellData& rd = rnode.dataRef();
+                    //умножение на r дл€ осесимметричных координат
+                    if (config.coord_type == CoordType::axisymmetric)
+                    {
+                        rd.setY(y);
+                        for (auto eq : Equations)
+                        {
+                            Q.set(eq, Q(eq) * y);
+                        }
+                    }
+                    //cout << "(" << x << ", " << y << "): " << Q << endl;
+                    rd.setQ0(Q); //запись в CellData
+                }
+            }
         }
     }
     return;

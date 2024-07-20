@@ -35,7 +35,8 @@ class TreeNode
     std::array<NodeTag, NEIGHBOURS_NUM> neighbours = {}; //соседи
     std::array<NodeTag, MAX_NEIGHBOURS12_NUM> neighbours12 = {}; //соседи с учетом диагональных и возможного разделени€ ребра надвое
     //номера ребер, составл€ющих стороны €чейки (до DIRECTIONS_NUM*2 штук с учетом возможного разделени€ ребер)
-    //nodeEdgeId edges[DIRECTIONS_NUM * 2] = { null, null, null, null, null, null, null, null }; //нумераци€ по часовой стрелке, начина€ с левой половины верхней стороны
+    
+    std::array<nodeEdgeId, MAX_NEIGHBOURS12_NUM - 4> edges = {}; //нумераци€ по часовой стрелке, начина€ с левой половины верхней стороны
     //значени€ по умолчанию дл€ edges[8] нужно укзаывать €вно, т.к. нет дефолтного конструктора дл€ nodeEdgeId
     double polyCoeffs[EQ_NUM][POLY_COEFF_NUM] = {}; //коэффициенты параболоида CWENO дл€ каждого уравнени€
 
@@ -116,26 +117,15 @@ public:
     NodeTag getNodeOrChildTag(int target_depth, Quadrant quadrant) const; //поиск граничной ноды нужного уровн€ внутри данной (глубина поиска не более 1)
     bool hasEdge(ushorty etype) const; //есть ли ребро
     nodeEdge& getEdge(ushorty etype) const; //ссылка на ребро
-    double h() const; //длина стороны €чейки
-    void gatherDataFromChildren(); //сбор данных из детей дл€ объединени€
-    void updateGrandChildren(); //обновление данных о внуках
-    //bool hasNeighbour(Neighbour n) const; //есть ли сосед по направлению
-    bool hasNeighbour12(Neighbour12 n12) const;
     int neighbours12Num() const; //число соседей
     //bool isBoundary(); //€вл€етс€ ли граничной
     //bool isCorner(); //€вл€етс€ ли угловой
     TreeNode& getNeigbourOrSelf(Neighbour dir, int target_depth) const; //ссылка на соседа (или на себ€, если нет соседа)
-    void updateNeighbour(Neighbour dir, NodeTag tag1, NodeTag tag2); //внесение данных о соседе после его дроблени€
-    void updateNeighbour(Neighbour dir, NodeTag tag); //внесение данных о соседе
-    int markToRefine(); //пометка €чейки к дроблению
-    int refine(); //дробление €чейки
-    int tryCoarsen(); //склейка €чейки
     bool isNeighbour12InSubstencil(Neighbour12 n, Quadrant q) const; //попадает ли сосед в подшаблон дл€ линейной функции
     void updateEigenObjects(); //создание или обновление Eigen матриц и т.д. после изменени€ сетки
     void calcPolynomialCWENO(rkStep rk); //вычисление коэффициентов 2D CWENO полинома
     CellData evalPolynomialAt(point p, rkStep rk = 0); //реконструированное полиномом значение 
-    std::string dumpNeighbourVector(Neighbour n) const; //дамп соседа в виде вектора
-    std::string dumpNeighbour12Vector(Neighbour12 n) const;*/
+    */
 };
 
 //struct ссылки на детей

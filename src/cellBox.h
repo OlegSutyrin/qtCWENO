@@ -13,7 +13,7 @@ double distanceSquared(Point const& p1, Point const& p2); //квадрат расстояния м
 double distance(Point const& p1, Point const& p2); //расстояние между точками
 
 const double ISQ3 = 0.5773502691896258; //1/sqrt(3)
-std::pair<Point, Point> quadraturePoints(Point const& p1, Point const& p2); //две точки Гауссовой квадратуры на отрезке
+std::array<Point, QUADRATURE_POINTS_NUM> quadraturePoints(Point const& p1, Point const& p2); //две точки Гауссовой квадратуры на отрезке
 
 class CellBox
 {

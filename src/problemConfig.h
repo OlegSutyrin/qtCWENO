@@ -5,11 +5,7 @@
 
 //compile-time константы
 const double DOUBLE_EPS12 = 1e-12; //эпсилон дл€ проверки равенства чисел типа double
-const int DIRECTIONS_NUM = static_cast<int>(Directions::count); //число кардинальных направлений системы координат
-const int QUADRANTS_NUM = static_cast<int>(Quadrant::count); //число вершин €чейки
-const int NEIGHBOURS_NUM = static_cast<int>(Neighbour::count); //число соседей
-const int EQ_NUM = static_cast<int>(Equation::count); //число уравнений
-const int MAX_NEIGHBOURS12_NUM = static_cast<int>(Neighbour12::count); //число всех возможных соседей с учетом диагональных
+const int QUADRATURE_POINTS_NUM = 2; //число точек √ауссовой квадратуры на ребре
 const int POLY_COEFF_NUM = 5; //число коэффициентов параболоида CWENO: px, py, pxx, pxy, pyy
 const int TECPLOT_FIELDS_NUMBER = 2 + EQ_NUM + 3; //x,y + rho,u,v,p + Mach,level,gradrho
 const int RK_ORDER_MAX = 3; //максимальный пор€док метода –унге- утты

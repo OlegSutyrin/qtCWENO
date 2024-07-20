@@ -37,13 +37,13 @@ double distance(Point const& p1, Point const& p2) //расстояние между точками
     return sqrt(distanceSquared(p1, p2));
 }
 
-std::pair<Point, Point> quadraturePoints(Point const& p1, Point const& p2) //две точки Гауссовой квадратуры на отрезке
+std::array<Point, QUADRATURE_POINTS_NUM> quadraturePoints(Point const& p1, Point const& p2) //две точки Гауссовой квадратуры на отрезке
 {
-    std::pair<Point, Point> ret;
+    std::array<Point, QUADRATURE_POINTS_NUM> ret;
     double dx = fabs(p2.x - p1.x);
     double dy = fabs(p2.y - p1.y);
-    ret.first  = { middle(p1, p2).x - ISQ3 * 0.5 * dx, middle(p1, p2).y - ISQ3 * 0.5 * dy };
-    ret.second = { middle(p1, p2).x + ISQ3 * 0.5 * dx, middle(p1, p2).y + ISQ3 * 0.5 * dy };
+    ret[0] = {middle(p1, p2).x - ISQ3 * 0.5 * dx, middle(p1, p2).y - ISQ3 * 0.5 * dy};
+    ret[1] = {middle(p1, p2).x + ISQ3 * 0.5 * dx, middle(p1, p2).y + ISQ3 * 0.5 * dy};
     return ret;
 }
 

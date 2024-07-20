@@ -11,6 +11,7 @@
 #include "CellBox.h"
 #include "QuadTreeForest.h"
 
+//функции преобразования enum class'ов
 Neighbour opposite(Neighbour n) //противоположный сосед
 {
     switch (n)
@@ -117,19 +118,32 @@ int main(int argc, char** argv)
     }
 
     addGhostLayer(); //добавление слоя ghost-деревьев (изменение config'а)
-    forest.initialize(); //выделение памяти в лесу
+    //задание уровней magGradRho
+    cout << "refine levels: ";
+    double lvl = config.meshRefinelevel0;
+    for (size_t i = 0; i <= config.max_depth; i++)
+    {
+        globals.refineLvls.push_back(lvl);
+        cout << "(" << i << ": " << globals.refineLvls[i] << ") ";
+        lvl *= config.meshRefinefactor;
+    }
+    cout << endl;
 
-    //генерация стартовых деревьев
-    for (quadTreeId id = 0; id < config.Nx * config.Ny; id++)
+    //создание леса
+    forest.initialize(); //выделение памяти
+    for (quadTreeId id = 0; id < config.Nx * config.Ny; id++) //генерация стартовых деревьев
         forest.addTree(QuadTree(id));
 
     //forest.forAllTrees(printTree, INCLUDE_GHOSTS);
     //forest.forAllNodes(printNode, INCLUDE_GHOSTS, INCLUDE_BRANCHES);
 
     forest.meshRefineInitial();
+    forest.initialCondition();
     ExportForest();
 
-    const int steps = 20;
+
+    //--------------------- цикл по времени -----------------------------
+    /*const int steps = 20;
     double dx = config.bubble_axle_x / (double)steps;
     //double dy = config.bubble_axle_y / (double)steps;
     for (int step = 0; step < steps; step++)
@@ -147,7 +161,7 @@ int main(int argc, char** argv)
         forest.meshCoarsenInitial();
         forest.meshRefineInitial();
         ExportForest();
-    }
+    }*/
 
     auto chrono_duration = std::chrono::steady_clock::now() - chrono_start;
     int duration_seconds = (int)round(std::chrono::duration<double, std::milli>(chrono_duration).count() / 1000);
