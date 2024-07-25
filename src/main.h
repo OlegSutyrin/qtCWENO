@@ -32,19 +32,24 @@ enum class Quadrant { //квадранты (дети ноды)
 const int QUADRANTS_NUM = static_cast<int>(Quadrant::count); //число вершин ячейки
 const std::array<Quadrant, QUADRANTS_NUM> Quadrants = { Quadrant::top_left, Quadrant::top_right, Quadrant::bottom_right, Quadrant::bottom_left }; //для циклов по квадрантам
 
-enum class Neighbour { //соседи (используются для работы со структурой дерева)
+enum class Neighbour { //соседи (используются в основном для структуры дерева)
     top, right, bottom, left, count
 };
 const int NEIGHBOURS_NUM = static_cast<int>(Neighbour::count); //число соседей
 const std::array <Neighbour, NEIGHBOURS_NUM> Neighbours = { Neighbour::top, Neighbour::right, Neighbour::bottom, Neighbour::left }; //для циклов по соседям
 
-enum class Neighbour12 { //соседи с учетом диагоналей и разбиения ребер (используются для ребер и CWENO)
+enum class Neighbour12 { //соседи с учетом диагоналей и разбиения ребер (используются для CWENO)
     top1, top2, top_right, right1, right2, bottom_right, bottom1, bottom2, bottom_left, left1, left2, top_left, count
 };
 const int MAX_NEIGHBOURS12_NUM = static_cast<int>(Neighbour12::count); //число всех возможных соседей с учетом диагональных
 const std::array <Neighbour12, MAX_NEIGHBOURS12_NUM> Neighbours12 = { Neighbour12::top1, Neighbour12::top2, Neighbour12::top_right, Neighbour12::right1, Neighbour12::right2, Neighbour12::bottom_right, Neighbour12::bottom1, Neighbour12::bottom2, Neighbour12::bottom_left, Neighbour12::left1, Neighbour12::left2, Neighbour12::top_left }; //для циклов
 const std::array <Neighbour12, MAX_NEIGHBOURS12_NUM - 4> Neighbours12Cardinal = { Neighbour12::top1, Neighbour12::top2, Neighbour12::right1, Neighbour12::right2, Neighbour12::bottom1, Neighbour12::bottom2, Neighbour12::left1, Neighbour12::left2 }; //для циклов по соседям по стороне
 const std::array <Neighbour12, 4> Neighbours12Diagonal = { Neighbour12::top_right, Neighbour12::bottom_right, Neighbour12::bottom_left, Neighbour12::top_left }; //для циклов по диагональным соседям
+
+enum class Edge { //ребра ячейки, до двух на каждую сторону
+    top1, top2, right1, right2, bottom1, bottom2, left1, left2, count
+};
+const int EDGES_NUM = static_cast<int>(Edge::count); //число возможных ребер в ячейке
 
 enum class Equation : unsigned int { //уравнения
     density, momentum_x, momentum_y, energy, count
@@ -68,9 +73,12 @@ enum class FluxType { //методы вычисления потоков на ребрах
 
 //преобразования enum class'ов
 Neighbour opposite(Neighbour n); //противоположный сосед
-Neighbour12 opposite(Neighbour12 n12); //противоположный сосед12
+Neighbour12 opposite(Neighbour12 n12); //противоположный (по ребру или вершине) сосед
 Quadrant toQuadrant(Neighbour12 n12); //квадрант по соседу12
 Neighbour12 toNeighbour12(Neighbour n); //сосед12 по соседу4
+Edge toEdge(Neighbour n); //ребро по соседу4
+Edge next(Edge e); //следующее ребро
+Edge opposite(Edge e); //противоположное (по стороне) ребро
 
 #include "output.h"
 class Globals

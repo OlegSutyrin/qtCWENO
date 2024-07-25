@@ -7,9 +7,9 @@ int NodeTag::depth() const { return depth_; }
 treeNodeId NodeTag::id() const { return id_; }
 bool NodeTag::isNull() const { return (tree() == null || id() == null); }
 
-bool NodeTag::operator==(const NodeTag& tag) //equality overload
+bool NodeTag::operator==(const NodeTag& rhs) //equality overload
 {
-    if (tree_ == tag.tree_ && depth_ == tag.depth_ && id_ == tag.id_)
+    if (tree_ == rhs.tree_ && depth_ == rhs.depth_ && id_ == rhs.id_)
         return true;
     return false;
 }

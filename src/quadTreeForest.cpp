@@ -66,6 +66,7 @@ QuadTree& QuadTreeForest::getTreeByCoords(Point p) //поиск дерева по координатам
         return trees[0]; //to suppress warning
     }
 }
+NodeEdge& QuadTreeForest::edgeRef(nodeEdgeId eid) { return edges[eid]; } //ссылка на ребро по id
 
 //mutators -----------------------
 void QuadTreeForest::initialize() //выделение памяти под деревья
@@ -76,9 +77,68 @@ void QuadTreeForest::initialize() //выделение памяти под деревья
 }
 void QuadTreeForest::addTree(QuadTree tree) { trees.push_back(tree); } //добавление дерева в список
 void QuadTreeForest::addNodeToRefine(const NodeTag& t) { forest.toRefine[t.depth()].push_back(t); } //добавление ноды в список на дробление
+nodeEdgeId QuadTreeForest::addEdge(NodeEdge _edge) //внесение ребра в список
+{
+    nodeEdgeId eid = getVacantEdgeId();
+    edges[eid] = _edge;
+    return eid;
+}
+
+nodeEdgeId QuadTreeForest::addEdgeUnique(NodeEdge _edge) //внесение ребра в список с проверкой уникальности
+{
+    //поиск такого ребра среди остальных
+    for (nodeEdgeId eid = 0; eid < edges.size(); eid++)
+    {
+        if (edges[eid] == _edge)
+            return eid;
+    }
+    //если не нашлось - добавление нового
+    return addEdge(_edge);
+}
+
+void QuadTreeForest::updateEdge(nodeEdgeId eid, NodeTag n1, NodeTag n2) //обновление данных ребра
+{
+    try {
+        if (edges.size() > eid && !edges[eid].isDeleted())
+        {
+            if (!n1.isNull()) //если пришел null - не обновляем тег
+                edges[eid].setN1(n1);
+            if (!n2.isNull())
+                edges[eid].setN2(n2);
+        }
+        else
+        {
+            throw std::invalid_argument("edge deleted or doesn't exist");
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "forest.updateEdge() error: " << e.what() << " " << eid << endl;
+    }
+    return;
+}
+void QuadTreeForest::removeEdge(nodeEdgeId eid) //удаление ребра из списка
+{
+    try {
+        if (edges.size() > eid && !edges[eid].isDeleted())
+        {
+            edges[eid].markDeleted();
+            vacant_edge_ids.push_back(eid);
+        }
+        else
+        {
+            throw std::invalid_argument("edge deleted or doesn't exist");
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "forest.removeEdge() error: " << e.what() << " " << eid << endl;
+    }
+    return;
+}
 
 //inspectors -----------------------
-size_t QuadTreeForest::activeNodesNumber() //подсчет активных (неудаленных) нод
+size_t QuadTreeForest::activeNodesNumber() const //подсчет активных (неудаленных) нод
 {
     size_t ret = 0;
     for (auto& rtree : forest.trees)
@@ -88,7 +148,7 @@ size_t QuadTreeForest::activeNodesNumber() //подсчет активных (неудаленных) нод
     }
     return ret;
 }
-size_t QuadTreeForest::leavesNumber() //подсчет листьев
+size_t QuadTreeForest::leavesNumber() const //подсчет листьев
 {
     size_t ret = 0;
     for (auto& rtree : forest.trees)
@@ -173,6 +233,23 @@ dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин для выв
     return ret;
 }
 
+nodeEdgeId QuadTreeForest::getVacantEdgeId() //получение номера вакантной ячейки или содание новой в векторе edges
+{
+    nodeEdgeId ret;
+    //если нет вакантных мест - писать в конец массива
+    if (vacant_edge_ids.empty())
+    {
+        ret = edges.size(); //на 1 больше номера последнего элемента
+        edges.emplace_back(); //выделение памяти (должно вызываться после .size())
+    }
+    else
+    {
+        ret = vacant_edge_ids.back(); //номер последней (по времени маркирования) вакантной ячейки в массиве edges
+        vacant_edge_ids.pop_back(); //убрать из списка вакантных ячеек
+    }
+    return ret;
+}
+
 void QuadTreeForest::meshApplyRefineList() //дробление ячеек из списка toRefine и балансировка
 {
     for (auto depth = 1; depth < config.max_depth; depth++)
@@ -191,7 +268,7 @@ void QuadTreeForest::meshApplyRefineList() //дробление ячеек из списка toRefine 
 
 void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
 {
-    if (config.meshRefineAll)
+    if (config.meshRefineAll) //если нужно раздробить всё
     {
         for (auto depth = 1; depth < config.max_depth; depth++)
         {
@@ -207,7 +284,7 @@ void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
         }
         return;
     }
-    //дробление ячеек вплоть до последнего слоя
+    //дробление по геометрии начальных данных
     for (auto depth = 1; depth < config.max_depth; depth++)
     {
         cout << "Refining level " << depth << ": " << forest.leavesNumber();
@@ -272,7 +349,7 @@ void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
         meshApplyRefineList();
         cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
     }
-    //сomputeQuadraturePoints(); //расчет точек квадратуры в ребрах
+    computeQuadraturePoints(); //расчет точек квадратуры в ребрах
     //updateEigenObjects(); //перерасчет матриц Eigen в ячейках
     return;
 }
@@ -305,6 +382,7 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для тест
         }
         cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
     }
+    computeQuadraturePoints(); //расчет точек квадратуры в ребрах
 }
 
 void QuadTreeForest::meshUpdate() //обновление сетки
@@ -352,9 +430,20 @@ void QuadTreeForest::meshUpdate() //обновление сетки
             }
         }
     }
-    //сomputeQuadraturePoints(); //перерасчет точек квадратуры в ребрах
+    computeQuadraturePoints(); //перерасчет точек квадратуры в ребрах
     //updateEigenObjects(); //перерасчет матриц Eigen в ячейках
     return;
+}
+
+void QuadTreeForest::computeQuadraturePoints() //расчет точек квадратуры во всех ребрах
+{
+    for (auto& redge : edges)
+    {
+        if (!redge.isDeleted())
+        {
+            redge.computeQuadraturePoints();
+        }
+    }
 }
 
 void QuadTreeForest::initialCondition() //начальные условия
@@ -533,6 +622,41 @@ void QuadTreeForest::exportNeighbours12(std::string filename)
         }
     }
     file_output.close();
+    return;
+
+}
+
+void QuadTreeForest::exportEdges(std::string filename)
+{
+    std::ofstream file_output;
+    file_output.open(filename);
+    file_output << "VARIABLES = \"x\", \"y\", \"dx\", \"dy\"" << endl;
+
+    //вектора соседей
+    file_output << "ZONE T = \"Forest edge neighbours\" ";
+    file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
+    for (auto& edge : forest.edges)
+    {
+        if (!edge.isDeleted())
+        {
+            file_output << edge.dumpNeigboursVectors();
+            //auto& nnode1 = treeNode::getNode(edge.n1);
+            //auto& nnode2 = treeNode::getNode(edge.n2);
+            //if (!nnode1.is_leaf || !nnode2.is_leaf)
+                //cout << "suspicious edge! " << edge << endl;
+        }
+    }
+
+    //точки квадратуры
+    file_output << endl << "ZONE T = \"Edge quadrature points\" ";
+    file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
+    for (auto& edge : forest.edges)
+    {
+        if (!edge.isDeleted())
+        {
+            file_output << edge.dumpQuadraturePoints();
+        }
+    }
     return;
 
 }

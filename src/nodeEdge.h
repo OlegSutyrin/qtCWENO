@@ -20,11 +20,21 @@ public:
     double FQ(Equation eq) const; //компонента потока
     double length() const; //вычисление длины ребра по точкам квадратуры TODO: хранить вершины и длину в самом ребре
 
+    //mutators
+    void markDeleted();
+    void setN1(NodeTag ntag);
+    void setN2(NodeTag ntag);
+    
+    //inspectors
+    bool isDeleted();
+
     //other
     void computeQuadraturePoints(); //расчет точек квадратуры
     void computeFluxLF(rkStep rk); //расчет потока (Lax-Friedrich flux)
     void computeFluxHLLC(rkStep rk); //расчет потока (HLLC Rieman solver)
     void computeFluxRiemannExact(rkStep rk); //расчет потока (exact Rieman solver)
+
+    bool operator==(const NodeEdge& rhs); //equality overload
 
     //output
     std::string dumpNeigboursVectors(); //дамп соседей в виде векторов

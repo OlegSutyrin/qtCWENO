@@ -16,7 +16,7 @@ public:
     int depth() const;
     treeNodeId id() const;
     bool isNull() const;
-    bool operator==(const NodeTag& tag); //equality overload
+    bool operator==(const NodeTag& rhs); //equality overload
     friend std::ostream& operator<<(std::ostream& os, const NodeTag& tag); //output overload
 };
 

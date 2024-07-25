@@ -37,7 +37,7 @@
     "scatter": true, //scatter (ASCII)
     "neighbours": true, //соседи (ASCII)
     "neighbours12": true, //соседи с учетом диагональных и разделения ребер (ASCII)
-    "edges": false, //ребра (ASCII)
+    "edges": true, //ребра (ASCII)
     "fluxes": false, //потоки (ASCII)
     "plt": false //бинарные .plt
   },

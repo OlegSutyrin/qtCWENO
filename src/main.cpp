@@ -23,7 +23,7 @@ Neighbour opposite(Neighbour n) //противоположный сосед
     default: return Neighbour::top; //to suppress warning
     }
 }
-Neighbour12 opposite(Neighbour12 n12) //противоположный (относительно ребра или вершины) сосед
+Neighbour12 opposite(Neighbour12 n12) //противоположный (по ребру или вершине) сосед
 {
     switch (n12)
     {
@@ -62,6 +62,36 @@ Neighbour12 toNeighbour12(Neighbour n) //сосед12 по соседу
     case Neighbour::bottom: return Neighbour12::bottom1;
     case Neighbour::left: return Neighbour12::left1;
     default: return Neighbour12::top1; //to suppress warning
+    }
+}
+Edge toEdge(Neighbour n) //ребро по соседу4
+{
+    switch (n)
+    {
+    case Neighbour::top: return Edge::top1;
+    case Neighbour::right: return Edge::right1;
+    case Neighbour::bottom: return Edge::bottom1;
+    case Neighbour::left: return Edge::left1;
+    default: return Edge::top1; //to suppress warning
+    }
+}
+Edge next(Edge e) //следующее ребро
+{
+    return static_cast<Edge>(static_cast<int>(e) + 1);
+}
+Edge opposite(Edge e) //противоположное (по стороне) ребро
+{
+    switch (e)
+    {
+    case Edge::top1: return Edge::bottom2;
+    case Edge::top2: return Edge::bottom1;
+    case Edge::right1: return Edge::left2;
+    case Edge::right2: return Edge::left1;
+    case Edge::bottom1: return Edge::top2;
+    case Edge::bottom2: return Edge::top1;
+    case Edge::left1: return Edge::right2;
+    case Edge::left2: return Edge::right1;
+    default: return Edge::top1; //to suppress warning
     }
 }
 
@@ -143,7 +173,7 @@ int main(int argc, char** argv)
 
 
     //--------------------- цикл по времени -----------------------------
-    /*const int steps = 20;
+    const int steps = 20;
     double dx = config.bubble_axle_x / (double)steps;
     //double dy = config.bubble_axle_y / (double)steps;
     for (int step = 0; step < steps; step++)
@@ -161,7 +191,7 @@ int main(int argc, char** argv)
         forest.meshCoarsenInitial();
         forest.meshRefineInitial();
         ExportForest();
-    }*/
+    }
 
     auto chrono_duration = std::chrono::steady_clock::now() - chrono_start;
     int duration_seconds = (int)round(std::chrono::duration<double, std::milli>(chrono_duration).count() / 1000);

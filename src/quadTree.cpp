@@ -37,26 +37,26 @@ QuadTree::QuadTree(quadTreeId _id) //конструктор дерева с одной нодой
             //запись о соседе (корень соседнего дерева)
             root.setNeighbour(n, NodeTag(nid, FIRST_LEVEL, FIRST_ID));
             //создание ребра между ячейками
-            /*nodeEdge edge;
+            NodeEdge edge;
             switch (n)
             {
-            case NEIGHBOUR_TOP:
-                edge = { root.neighbours[n], ctag, ORIENTATION_HORIZONTAL };
+            case Neighbour::top:
+                edge = NodeEdge(root.neighbour(n), root.tag(), Orientation::horizontal);
                 break;
-            case NEIGHBOUR_RIGHT:
-                edge = { ctag, root.neighbours[n], ORIENTATION_VERTICAL };
+            case Neighbour::right:
+                edge = NodeEdge(root.tag(), root.neighbour(n), Orientation::vertical);
                 break;
-            case NEIGHBOUR_BOTTOM:
-                edge = { ctag, root.neighbours[n], ORIENTATION_HORIZONTAL };
+            case Neighbour::bottom:
+                edge = NodeEdge(root.tag(), root.neighbour(n), Orientation::horizontal);
                 break;
-            case NEIGHBOUR_LEFT:
-                edge = { root.neighbours[n], ctag, ORIENTATION_VERTICAL };
+            case Neighbour::left:
+                edge = NodeEdge(root.neighbour(n), root.tag(), Orientation::vertical);
                 break;
-            }*/
+            }
             //добавление ребра в список с проверкой уникальности
-            //root.edges[2 * n] = forest.addEdgeUnique(edge); //умножение на 2 из-за нумерации ребер
-            //root.edges[2 * n + 1] = null; //"вторая половина" неразделенной стороны
-            //cout << "created edge " << forest.edges[root.edges[2 * n]] << endl;
+            root.setEdge(toEdge(n), forest.addEdgeUnique(edge));
+            root.setEdge(next(toEdge(n)), null); //второе ребро неразделенной стороны
+            //cout << "created edge " << root.edgeRef(toEdge(n)) << endl;
         }
     }
 

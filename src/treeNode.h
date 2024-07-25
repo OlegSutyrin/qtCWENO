@@ -32,12 +32,11 @@ class TreeNode
     bool is_deleted = false; //для отличия живых ячеек от удаленных, т.к. удаление = пометка места на уровне свободным
     cellDataId dataId_ = null; //номер записи для данных в одномерном массиве cell_data, только для листьев
     CellBox box_ = {};
-    std::array<NodeTag, NEIGHBOURS_NUM> neighbours = {}; //соседи
-    std::array<NodeTag, MAX_NEIGHBOURS12_NUM> neighbours12 = {}; //соседи с учетом диагональных и возможного разделения ребра надвое
-    //номера ребер, составляющих стороны ячейки (до DIRECTIONS_NUM*2 штук с учетом возможного разделения ребер)
-    
-    std::array<nodeEdgeId, MAX_NEIGHBOURS12_NUM - 4> edges = {}; //нумерация по часовой стрелке, начиная с левой половины верхней стороны
-    //значения по умолчанию для edges[8] нужно укзаывать явно, т.к. нет дефолтного конструктора для nodeEdgeId
+    std::array<NodeTag, NEIGHBOURS_NUM> neighbours = {}; //соседи(используются в основном для структуры дерева)
+    std::array<NodeTag, MAX_NEIGHBOURS12_NUM> neighbours12 = {}; //соседи с учетом диагоналей и разбиения ребер (используются для CWENO)
+    //номера ребер, составляющих стороны ячейки (до EDGES_NUM=8 штук с учетом возможного разделения ребер)
+    std::array<nodeEdgeId, EDGES_NUM> edges = {}; //нумерация по часовой стрелке, начиная с левой половины верхней стороны
+    //(?)значения по умолчанию для edges[EDGES_NUM] нужно укзаывать явно, т.к. нет дефолтного конструктора для nodeEdgeId
     double polyCoeffs[EQ_NUM][POLY_COEFF_NUM] = {}; //коэффициенты параболоида CWENO для каждого уравнения
 
     Eigen::VectorXd coeffs; //вектор неизвестных (px, py, pxx, pxy, pyy) для оптимального полинома
@@ -67,6 +66,8 @@ public:
     TreeNode& childRef(Quadrant q); //ссылка на ребенка по квадранту
     const TreeNode& childRef(Quadrant q) const; //const версия
     const ChildrenTags childrenTags() const; //тэги всех детей
+    const nodeEdgeId edge(Edge e) const; //id ребра
+    NodeEdge& edgeRef(Edge e); //ссылка на ребро
 
     TreeNode& getChildOrSelfByCoords(Point p); //ссылка на ребенка (или себя) по координатам
 
@@ -87,6 +88,11 @@ public:
     void setGrandParency(bool status); //отметка о наличии внуков
     void updateGrandParency(); //обновление данных о наличии внуков после склейки ребенка
     //void setChildrenCommonNeighbour(Neighbour n, NodeTag ntag); //внесение данных об общем соседе для детей
+    void setEdge(Edge etype, nodeEdgeId eid); //задание ребра
+    void splitEdge(Neighbour n); //разделить ребро и обновить записи у себя и (бездетного) соседа
+    void joinEdge(Neighbour n); //склеить ребро и обновить записи у себя и (бездетного) соседа
+    void updateChildrenEdges(Neighbour n); //обновить ребра у своих и соседских детей
+    void gatherEdgesFromChildren(Neighbour n); //записать детские ребра сете и обновить ребра у соседских детей
     int markToRefine(); //пометка ячейки к дроблению
     int refine(); //дробление ячейки
     void gatherDataFromChildren(); //сбор данных из детей для объединения
@@ -100,6 +106,7 @@ public:
     bool hasGrandChildren(Neighbour n) const; //есть ли внуки с определенной стороны
     bool hasNeighbour(Neighbour n) const; //есть ли сосед по направлению
     bool hasNeighbour12(Neighbour12 n12) const;
+    bool hasEdge(Edge e) const; //есть ли ребро
 
     //other
     static TreeNode& nodeRef(const NodeTag& tag); //ссылка на ноду по тэгу (static - общая функция для всех нод)
@@ -115,8 +122,6 @@ public:
 
     /*
     NodeTag getNodeOrChildTag(int target_depth, Quadrant quadrant) const; //поиск граничной ноды нужного уровня внутри данной (глубина поиска не более 1)
-    bool hasEdge(ushorty etype) const; //есть ли ребро
-    nodeEdge& getEdge(ushorty etype) const; //ссылка на ребро
     int neighbours12Num() const; //число соседей
     //bool isBoundary(); //является ли граничной
     //bool isCorner(); //является ли угловой

@@ -135,6 +135,9 @@ const ChildrenTags TreeNode::childrenTags() const //тэги всех детей
     return ChildrenTags(childRef(Quadrant::top_left).tag(), childRef(Quadrant::top_right).tag(), childRef(Quadrant::bottom_right).tag(), childRef(Quadrant::bottom_left).tag());
 }
 
+const nodeEdgeId TreeNode::edge(Edge e) const { return edges[static_cast<int>(e)]; } //id ребра
+NodeEdge& TreeNode::edgeRef(Edge e) { return forest.edgeRef(edge(e)); } //ссылка на ребро
+
 TreeNode& TreeNode::getChildOrSelfByCoords(Point p) //ссылка на ребенка по координатам
 {
     if (is_leaf)
@@ -384,7 +387,7 @@ void TreeNode::setData(const CellData& data) //запись данных
     try {
         if (dataId_ == null)
         {
-            throw std::invalid_argument("null data reference in this node!");
+            throw std::invalid_argument("null data reference in this node");
         }
         else
         {
@@ -442,6 +445,160 @@ void TreeNode::updateGrandParency()
         break;
     }
 }*/
+
+void TreeNode::setEdge(Edge etype, nodeEdgeId eid) { edges[static_cast<int>(etype)] = eid; } //задание ребра
+void TreeNode::splitEdge(Neighbour n) //разделить ребро и обновить записи у себя и (бездетного) соседа
+{
+    Edge etype = toEdge(n);
+    nodeEdgeId eid = edge(etype);
+    auto& rnnode = nodeRef(neighbour(n));
+    ChildrenRefs crefs(childRef(Quadrant::top_left), childRef(Quadrant::top_right), childRef(Quadrant::bottom_right), childRef(Quadrant::bottom_left));
+    ChildrenTags ctags(crefs(Quadrant::top_left).tag(), crefs(Quadrant::top_right).tag(), crefs(Quadrant::bottom_right).tag(), crefs(Quadrant::bottom_left).tag());
+    switch (n)
+    {
+    case Neighbour::top: //общее ребро с соседом сверху
+        forest.updateEdge(eid, neighbour(n), ctags(Quadrant::top_left)); //запись нового маленького ребра поверх большого старого
+        crefs(Quadrant::top_left).setEdge(etype, eid); //запись в ребенке
+        rnnode.setEdge(opposite(etype), eid); //запись в соседней ячейке
+        crefs(Quadrant::top_right).setEdge(etype, forest.addEdge(NodeEdge(neighbour(n), ctags(Quadrant::top_right), Orientation::horizontal))); //создание второго ребра и запись в ребенке
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::top_right).edge(etype)); //запись о втором ребре в соседней ячейке
+        break;
+    case Neighbour::right: //справа
+        forest.updateEdge(eid, ctags(Quadrant::top_right), neighbour(n));
+        crefs(Quadrant::top_right).setEdge(etype, eid);
+        rnnode.setEdge(opposite(etype), eid);
+        crefs(Quadrant::bottom_right).setEdge(etype, forest.addEdge(NodeEdge(ctags(Quadrant::bottom_right), neighbour(n), Orientation::vertical)));
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::bottom_right).edge(etype));
+        break;
+    case Neighbour::bottom: //снизу
+        forest.updateEdge(eid, ctags(Quadrant::bottom_right), neighbour(n));
+        crefs(Quadrant::bottom_right).setEdge(etype, eid);
+        rnnode.setEdge(opposite(etype), eid);
+        crefs(Quadrant::bottom_left).setEdge(etype, forest.addEdge(NodeEdge(ctags(Quadrant::bottom_left), neighbour(n), Orientation::horizontal)));
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::bottom_left).edge(etype));
+        break;
+    case Neighbour::left: //слева
+        forest.updateEdge(eid, neighbour(n), ctags(Quadrant::bottom_left));
+        crefs(Quadrant::bottom_left).setEdge(etype, eid);
+        rnnode.setEdge(opposite(etype), eid);
+        crefs(Quadrant::top_left).setEdge(etype, forest.addEdge(NodeEdge(neighbour(n), ctags(Quadrant::top_left), Orientation::vertical)));
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::top_left).edge(etype));
+        break;
+    }
+}
+void TreeNode::joinEdge(Neighbour n) //склеить ребро и обновить записи у себя и (бездетного) соседа
+{
+    Edge etype = toEdge(n);
+    nodeEdgeId eid = null; //определяется ниже
+    switch (n)
+    {
+    case Neighbour::top: //общее ребро с соседом сверху
+        eid = childRef(Quadrant::top_left).edge(etype);
+        forest.updateEdge(eid, {}, tag()); //перезапись данных в склеенном ребре поверх первого старого
+        forest.removeEdge(childRef(Quadrant::top_right).edge(etype)); //удаление второго ребра
+        break;
+    case Neighbour::right: //справа
+        eid = childRef(Quadrant::top_right).edge(etype);
+        forest.updateEdge(eid, tag(), {});
+        setEdge(etype, eid); //запись себе
+        forest.removeEdge(childRef(Quadrant::bottom_right).edge(etype));
+        break;
+    case Neighbour::bottom: //снизу
+        eid = childRef(Quadrant::bottom_right).edge(etype);
+        forest.updateEdge(eid, tag(), {});
+        setEdge(etype, eid); //запись себе
+        forest.removeEdge(childRef(Quadrant::bottom_left).edge(etype));
+        break;
+    case Neighbour::left: //слева
+        eid = childRef(Quadrant::bottom_left).edge(etype);
+        forest.updateEdge(eid, {}, tag());
+        setEdge(etype, eid); //запись себе
+        forest.removeEdge(childRef(Quadrant::top_left).edge(etype));
+        break;
+    }
+    setEdge(etype, eid); //запись о ребре в этой ячейке
+}
+
+void TreeNode::updateChildrenEdges(Neighbour n) //обновить ребра у своих и соседских детей
+{
+    Edge etype = toEdge(n);
+    nodeEdgeId eid = edge(etype);
+    auto& rnnode = nodeRef(neighbour(n));
+    ChildrenRefs crefs(childRef(Quadrant::top_left), childRef(Quadrant::top_right), childRef(Quadrant::bottom_right), childRef(Quadrant::bottom_left));
+    ChildrenTags ctags(crefs(Quadrant::top_left).tag(), crefs(Quadrant::top_right).tag(), crefs(Quadrant::bottom_right).tag(), crefs(Quadrant::bottom_left).tag());
+    switch (n)
+    {
+    case Neighbour::top: //общее ребро с соседом сверху
+        forest.updateEdge(eid, neighbour(n), ctags(Quadrant::top_left)); //запись нового маленького ребра поверх большого старого
+        crefs(Quadrant::top_left).setEdge(etype, eid); //запись в ребенке
+        rnnode.setEdge(opposite(etype), eid); //запись в соседней ячейке
+        crefs(Quadrant::top_right).setEdge(etype, forest.addEdge(NodeEdge(neighbour(n), ctags(Quadrant::top_right), Orientation::horizontal))); //создание второго ребра и запись в ребенке
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::top_right).edge(etype)); //запись о втором ребре в соседней ячейке
+        break;
+    case Neighbour::right: //справа
+        forest.updateEdge(eid, ctags(Quadrant::top_right), neighbour(n));
+        crefs(Quadrant::top_right).setEdge(etype, eid);
+        rnnode.setEdge(opposite(etype), eid);
+        crefs(Quadrant::bottom_right).setEdge(etype, forest.addEdge(NodeEdge(ctags(Quadrant::bottom_right), neighbour(n), Orientation::vertical)));
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::bottom_right).edge(etype));
+        break;
+    case Neighbour::bottom: //снизу
+        forest.updateEdge(eid, ctags(Quadrant::bottom_right), neighbour(n));
+        crefs(Quadrant::bottom_right).setEdge(etype, eid);
+        rnnode.setEdge(opposite(etype), eid);
+        crefs(Quadrant::bottom_left).setEdge(etype, forest.addEdge(NodeEdge(ctags(Quadrant::bottom_left), neighbour(n), Orientation::horizontal)));
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::bottom_left).edge(etype));
+        break;
+    case Neighbour::left: //слева
+        forest.updateEdge(eid, neighbour(n), ctags(Quadrant::bottom_left));
+        crefs(Quadrant::bottom_left).setEdge(etype, eid);
+        rnnode.setEdge(opposite(etype), eid);
+        crefs(Quadrant::top_left).setEdge(etype, forest.addEdge(NodeEdge(neighbour(n), ctags(Quadrant::top_left), Orientation::vertical)));
+        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::top_left).edge(etype));
+        break;
+    }
+}
+
+void TreeNode::gatherEdgesFromChildren(Neighbour n)
+{
+    Edge etype = toEdge(n);
+    nodeEdgeId eid = null; //определяется ниже
+    switch (n)
+    {
+    case Neighbour::top: //общее ребро с соседом сверху
+        eid = childRef(Quadrant::top_left).edge(etype); //ребро ребенка
+        setEdge(etype, eid); //запись себе
+        forest.updateEdge(eid, {}, tag()); //обновление одного тега в ребре на тег данной ячейки
+        eid = childRef(Quadrant::top_right).edge(etype); //второе ребро
+        setEdge(next(etype), eid);
+        forest.updateEdge(eid, {}, tag());
+        break;
+    case Neighbour::right: //справа
+        eid = childRef(Quadrant::top_right).edge(etype);
+        setEdge(etype, eid);
+        forest.updateEdge(eid, tag(), {});
+        eid = childRef(Quadrant::bottom_right).edge(etype);
+        setEdge(next(etype), eid);
+        forest.updateEdge(eid, tag(), {});
+        break;
+    case Neighbour::bottom: //снизу
+        eid = childRef(Quadrant::bottom_right).edge(etype);
+        setEdge(etype, eid);
+        forest.updateEdge(eid, tag(), {});
+        eid = childRef(Quadrant::bottom_left).edge(etype);
+        setEdge(next(etype), eid);
+        forest.updateEdge(eid, tag(), {});
+        break;
+    case Neighbour::left: //слева
+        eid = childRef(Quadrant::bottom_left).edge(etype);
+        setEdge(etype, eid);
+        forest.updateEdge(eid, {}, tag());
+        eid = childRef(Quadrant::top_left).edge(etype);
+        setEdge(next(etype), eid);
+        forest.updateEdge(eid, {}, tag());
+        break;
+    }
+}
 
 int TreeNode::markToRefine() //пометка ячейки к дроблению
 {
@@ -601,102 +758,39 @@ int TreeNode::refine() //дробление ячейки
     }
     clearNeighbours12(); //удаление записей в этой ноде (необязательно?)
 
-    /*
     //обработка ребер: создание внутренних ребер
-    nodeEdge nedge = { cTL.tag(), cTR.tag(), ORIENTATION_VERTICAL }; //новое ребро
-    edgeId eid = forest.addEdge(nedge); //внесение в список
-    cTL.edges[NEIGHBOUR_RIGHT * 2] = eid; //внесение в ячейки
-    cTR.edges[NEIGHBOUR_LEFT * 2] = eid;
-    nedge = { cTR.tag(), cBR.tag(), ORIENTATION_HORIZONTAL };
-    eid = forest.addEdge(nedge);
-    cTR.edges[NEIGHBOUR_BOTTOM * 2] = eid;
-    cBR.edges[NEIGHBOUR_TOP * 2] = eid;
-    nedge = { cBL.tag(), cBR.tag(), ORIENTATION_VERTICAL };
-    eid = forest.addEdge(nedge);
-    cBR.edges[NEIGHBOUR_LEFT * 2] = eid;
-    cBL.edges[NEIGHBOUR_RIGHT * 2] = eid;
-    nedge = { cTL.tag(), cBL.tag(), ORIENTATION_HORIZONTAL };
-    eid = forest.addEdge(nedge);
-    cTL.edges[NEIGHBOUR_BOTTOM * 2] = eid;
-    cBL.edges[NEIGHBOUR_TOP * 2] = eid;
+    nodeEdgeId eid = forest.addEdge(NodeEdge(ctags(Quadrant::top_left), ctags(Quadrant::top_right), Orientation::vertical)); //создание и внесение ребра в список
+    crefs(Quadrant::top_left).setEdge(toEdge(Neighbour::right), eid); //запись в ячейки
+    crefs(Quadrant::top_right).setEdge(toEdge(Neighbour::left), eid);
+    eid = forest.addEdge(NodeEdge(ctags(Quadrant::top_right), ctags(Quadrant::bottom_right), Orientation::horizontal));
+    crefs(Quadrant::top_right).setEdge(toEdge(Neighbour::bottom), eid);
+    crefs(Quadrant::bottom_right).setEdge(toEdge(Neighbour::top), eid);
+    eid = forest.addEdge(NodeEdge(ctags(Quadrant::bottom_left), ctags(Quadrant::bottom_right), Orientation::vertical));
+    crefs(Quadrant::bottom_left).setEdge(toEdge(Neighbour::right), eid);
+    crefs(Quadrant::bottom_right).setEdge(toEdge(Neighbour::left), eid);
+    eid = forest.addEdge(NodeEdge(ctags(Quadrant::top_left), ctags(Quadrant::bottom_left), Orientation::horizontal));
+    crefs(Quadrant::top_left).setEdge(toEdge(Neighbour::bottom), eid);
+    crefs(Quadrant::bottom_left).setEdge(toEdge(Neighbour::top), eid);
+    
     //внешние ребра
     for (auto n : Neighbours)
     {
-        if (neighbours[n].id != null)
+        if (hasNeighbour(n))
         {
-            auto& nnode = nodeRef(neighbours[n]);
-            ushorty eindex = n * 2; //индекс ребра (для детей ячейки)
-            ushorty eindex_opposite = ((int)(n + 2) % 4) * 2; //индекс противоположного ребра (для соседа)
-            if (nnode.is_leaf) //у соседа нет детей, нужно разделить ребро
+            auto& rnnode = nodeRef(neighbour(n));
+            if (rnnode.hasChildren()) //дети есть, ребро уже разделено, нужно только обновить данные в ребрах и внести их своим детям
             {
-                switch (n)
-                {
-                case NEIGHBOUR_TOP:
-                    forest.updateEdge(edges[eindex], neighbours[n], cTL.tag()); //запись нового маленького ребра поверх большого старого
-                    cTL.edges[eindex] = edges[eindex]; //запись о ребре в ребенке
-                    nnode.edges[eindex_opposite + 1] = edges[eindex]; //запись ребре в соседней ячейке
-                    cTR.edges[eindex] = forest.addEdge({ neighbours[n], cTR.tag(), ORIENTATION_HORIZONTAL }); //создание второго ребра и записи о нем в ребенке
-                    nnode.edges[eindex_opposite] = cTR.edges[eindex]; //запись о втором ребре в соседней ячейке
-                    break;
-                case NEIGHBOUR_RIGHT:
-                    forest.updateEdge(edges[eindex], cTR.tag(), neighbours[n]);
-                    cTR.edges[eindex] = edges[eindex];
-                    nnode.edges[eindex_opposite + 1] = edges[eindex];
-                    cBR.edges[eindex] = forest.addEdge({ cBR.tag(), neighbours[n], ORIENTATION_VERTICAL });
-                    nnode.edges[eindex_opposite] = cBR.edges[eindex];
-                    break;
-                case NEIGHBOUR_BOTTOM:
-                    forest.updateEdge(edges[eindex], cBR.tag(), neighbours[n]);
-                    cBR.edges[eindex] = edges[eindex];
-                    nnode.edges[eindex_opposite + 1] = edges[eindex];
-                    cBL.edges[eindex] = forest.addEdge({ cBL.tag(), neighbours[n], ORIENTATION_HORIZONTAL });
-                    nnode.edges[eindex_opposite] = cBL.edges[eindex];
-                    break;
-                case NEIGHBOUR_LEFT:
-                    forest.updateEdge(edges[eindex], neighbours[n], cBL.tag());
-                    cBL.edges[eindex] = edges[eindex];
-                    nnode.edges[eindex_opposite + 1] = edges[eindex];
-                    cTL.edges[eindex] = forest.addEdge({ neighbours[n], cTL.tag(), ORIENTATION_VERTICAL });
-                    nnode.edges[eindex_opposite] = cTL.edges[eindex];
-                    break;
-                }
+                updateChildrenEdges(n);
             }
-            else //дети есть, ребро уже разделено, нужно только обновить данные в ребрах и внести их своим детям
+            else //у соседа нет детей, нужно разделить ребро
             {
-                switch (n)
-                {
-                case NEIGHBOUR_TOP:
-                    forest.updateEdge(edges[eindex], {}, cTL.tag()); //частичное обновление ребра
-                    cTL.edges[eindex] = edges[eindex]; //запись о ребре в ребенке
-                    forest.updateEdge(edges[eindex + 1], {}, cTR.tag()); //второе ребро
-                    cTR.edges[eindex] = edges[eindex + 1];
-                    break;
-                case NEIGHBOUR_RIGHT:
-                    forest.updateEdge(edges[eindex], cTR.tag(), {});
-                    cTR.edges[eindex] = edges[eindex];
-                    forest.updateEdge(edges[eindex + 1], cBR.tag(), {});
-                    cBR.edges[eindex] = edges[eindex + 1];
-                    break;
-                case NEIGHBOUR_BOTTOM:
-                    forest.updateEdge(edges[eindex], cBR.tag(), {});
-                    cBR.edges[eindex] = edges[eindex];
-                    forest.updateEdge(edges[eindex + 1], cBL.tag(), {});
-                    cBL.edges[eindex] = edges[eindex + 1];
-                    break;
-                case NEIGHBOUR_LEFT:
-                    forest.updateEdge(edges[eindex], {}, cBL.tag());
-                    cBL.edges[eindex] = edges[eindex];
-                    forest.updateEdge(edges[eindex + 1], {}, cTL.tag());
-                    cTL.edges[eindex] = edges[eindex + 1];
-                    break;
-                }
+                splitEdge(n);
             }
         }
     }
-    //очистка записей в данной ячейке (необязательно?)
-    for (size_t i = 0; i < 8; i++)
+    //очистка записей о ребрах в данной ячейке
+    for (size_t i = 0; i < EDGES_NUM; i++)
         edges[i] = null;
-    */
     return 0;
 }
 
@@ -767,132 +861,6 @@ int TreeNode::coarsen() //склейка ячейки
         }
     }
 
-    /*
-    cout << "coarsening tag: " << tag() << endl;
-    const Neighbour12 Opposites12[] = { Neighbour12::bottom2, Neighbour12::bottom1, Neighbour12::bottom_left,  Neighbour12::left2,  Neighbour12::left1,     Neighbour12::top_left,    Neighbour12::top2,    Neighbour12::top1,   Neighbour12::top_right, Neighbour12::right2, Neighbour12::right1, Neighbour12::bottom_right }; //противоположные направления
-    const Neighbour12 Nexts12[] = { Neighbour12::top2, Neighbour12::top_right, Neighbour12::right1, Neighbour12::right2, Neighbour12::bottom_right, Neighbour12::bottom1, Neighbour12::bottom2, Neighbour12::bottom_left, Neighbour12::left1, Neighbour12::left2, Neighbour12::top_left, Neighbour12::top1 }; //индекс+1 для краткости записи
-    const Neighbour12 Prevs12[] = { Neighbour12::top_left, Neighbour12::top1, Neighbour12::top2, Neighbour12::top_right, Neighbour12::right1, Neighbour12::right2, Neighbour12::bottom_right, Neighbour12::bottom1, Neighbour12::bottom2, Neighbour12::bottom_left, Neighbour12::left1, Neighbour12::left2 }; //индекс-1 для краткости записи
-    auto& cTL = childRef(Quadrant::top_left);
-    auto& cTR = childRef(Quadrant::top_right);
-    auto& cBR = childRef(Quadrant::bottom_right);
-    auto& cBL = childRef(Quadrant::bottom_left);
-    auto index = Neighbour12::left1;
-    if (cTL.hasNeighbour12(index))
-    {
-        auto& nTL = nodeRef(cTL.neighbours12[static_cast<int>(index)]);
-        if (cTL.neighbours12[static_cast<int>(index)] == cTR.neighbours12[static_cast<int>(index)]) //сосед крупнее детей данной ячейки
-        {
-            nTL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag()); //обновление для соседа
-            nTL.setNeighbour12(Opposites12[static_cast<int>(index)], {}); //запись "null"
-            setNeighbour12(index, cTL.neighbours12[static_cast<int>(index)]); //для данной ячейки
-            setNeighbour12(Nexts12[static_cast<int>(index)], {});
-        }
-        else //соседи того же размера, что дети данной ноды
-        {
-            auto& nTR = nodeRef(cTR.neighbours12[static_cast<int>(index)]);
-            nTL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag()); //для соседей
-            nTR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            setNeighbour12(index, cTL.neighbours12[static_cast<int>(index)]); //для данной ячейки
-            setNeighbour12(Nexts12[static_cast<int>(index)], cTR.neighbours12[static_cast<int>(index)]);
-            nTL.setNeighbour12(Opposites12[static_cast<int>(Prevs12[static_cast<int>(index)])], {}); //диагонали
-            nTR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(Nexts12[static_cast<int>(index)])])], {});
-        }
-    }
-    index = Neighbour12::top_right;
-    if (cTR.hasNeighbour12(index))
-    {
-        auto& nDTR = nodeRef(cTR.neighbours12[static_cast<int>(index)]);
-        nDTR.setNeighbour12(Opposites12[static_cast<int>(index)], tag());
-        setNeighbour12(index, nDTR.tag());
-    }
-    index = Neighbour12::right1;
-    if (cTR.hasNeighbour12(index))
-    {
-        auto& nTR = nodeRef(cTR.neighbours12[static_cast<int>(index)]);
-        if (cTR.neighbours12[static_cast<int>(index)] == cBR.neighbours12[static_cast<int>(index)])
-        {
-            nTR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            nTR.setNeighbour12(Opposites12[static_cast<int>(index)], {});
-            setNeighbour12(index, cTR.neighbours12[static_cast<int>(index)]);
-            setNeighbour12(Nexts12[static_cast<int>(index)], {});
-        }
-        else
-        {
-            auto& nBR = nodeRef(cBR.neighbours12[static_cast<int>(index)]);
-            nTR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            nBR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            setNeighbour12(index, cTR.neighbours12[static_cast<int>(index)]);
-            setNeighbour12(Nexts12[static_cast<int>(index)], cBR.neighbours12[static_cast<int>(index)]);
-            nTR.setNeighbour12(Opposites12[static_cast<int>(Prevs12[static_cast<int>(index)])], {});
-            nBR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(Nexts12[static_cast<int>(index)])])], {});
-        }
-    }
-    index = Neighbour12::bottom_right;
-    if (cBR.hasNeighbour12(index))
-    {
-        auto& nDBR = nodeRef(cBR.neighbours12[static_cast<int>(index)]);
-        nDBR.setNeighbour12(Opposites12[static_cast<int>(index)], tag());
-        setNeighbour12(index, nDBR.tag());
-    }
-    index = Neighbour12::bottom1;
-    if (cBR.hasNeighbour12(index))
-    {
-        auto& nBR = nodeRef(cBR.neighbours12[static_cast<int>(index)]);
-        if (cBR.neighbours12[static_cast<int>(index)] == cBL.neighbours12[static_cast<int>(index)])
-        {
-            nBR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            nBR.setNeighbour12(Opposites12[static_cast<int>(index)], {});
-            setNeighbour12(index, cBR.neighbours12[static_cast<int>(index)]);
-            setNeighbour12(Nexts12[static_cast<int>(index)], {});
-        }
-        else
-        {
-            auto& nBL = nodeRef(cBL.neighbours12[static_cast<int>(index)]);
-            nBR.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            nBL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            setNeighbour12(index, cBR.neighbours12[static_cast<int>(index)]);
-            setNeighbour12(Nexts12[static_cast<int>(index)], cBL.neighbours12[static_cast<int>(index)]);
-            nBR.setNeighbour12(Opposites12[static_cast<int>(Prevs12[static_cast<int>(index)])], {});
-            nBL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(Nexts12[static_cast<int>(index)])])], {});
-        }
-    }
-    index = Neighbour12::bottom_left;
-    if (cBL.hasNeighbour12(index))
-    {
-        auto& nDBL = nodeRef(cBL.neighbours12[static_cast<int>(index)]);
-        nDBL.setNeighbour12(Opposites12[static_cast<int>(index)], tag());
-        setNeighbour12(index, nDBL.tag());
-    }
-    index = Neighbour12::left1;
-    if (cBL.hasNeighbour12(index))
-    {
-        auto& nBL = nodeRef(cBL.neighbours12[static_cast<int>(index)]);
-        if (cBL.neighbours12[static_cast<int>(index)] == cTL.neighbours12[static_cast<int>(index)])
-        {
-            nBL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            nBL.setNeighbour12(Opposites12[static_cast<int>(index)], {});
-            setNeighbour12(index, cBL.neighbours12[static_cast<int>(index)]);
-            setNeighbour12(Nexts12[static_cast<int>(index)], {});
-        }
-        else
-        {
-            auto& nTL = nodeRef(cTL.neighbours12[static_cast<int>(index)]);
-            nBL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            nTL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(index)])], tag());
-            setNeighbour12(index, cBL.neighbours12[static_cast<int>(index)]);
-            setNeighbour12(Nexts12[static_cast<int>(index)], cTL.neighbours12[static_cast<int>(index)]);
-            nBL.setNeighbour12(Opposites12[static_cast<int>(Prevs12[static_cast<int>(index)])], {});
-            nTL.setNeighbour12(Opposites12[static_cast<int>(Nexts12[static_cast<int>(Nexts12[static_cast<int>(index)])])], {});
-        }
-    }
-    index = Neighbour12::top_left;
-    if (cTL.hasNeighbour12(index))
-    {
-        auto& nDTL = nodeRef(cTL.neighbours12[static_cast<int>(index)]);
-        nDTL.setNeighbour12(Opposites12[static_cast<int>(index)], tag());
-        setNeighbour12(index, nDTL.tag());
-    }*/
-
     //ссылки на детей
     ChildrenRefs crefs(childRef(Quadrant::top_left), childRef(Quadrant::top_right), childRef(Quadrant::bottom_right), childRef(Quadrant::bottom_left));
 
@@ -924,80 +892,23 @@ int TreeNode::coarsen() //склейка ячейки
         }
     }
 
-    /*
     //обработка ребер
-    forest.removeEdge(cTL.edges[NEIGHBOUR_RIGHT * 2]); //индекс ребра = индекс соседа * 2
-    forest.removeEdge(cTL.edges[NEIGHBOUR_BOTTOM * 2]);
-    forest.removeEdge(cBR.edges[NEIGHBOUR_TOP * 2]);
-    forest.removeEdge(cBR.edges[NEIGHBOUR_LEFT * 2]);
-    //склеивание боковых ребер
-    for (auto n : Neighbours)
+    forest.removeEdge(crefs(Quadrant::top_left).edge(Edge::right1)); //удаление внутренних ребер
+    forest.removeEdge(crefs(Quadrant::top_left).edge(Edge::bottom1));
+    forest.removeEdge(crefs(Quadrant::bottom_right).edge(Edge::top1));
+    forest.removeEdge(crefs(Quadrant::bottom_right).edge(Edge::left1));
+    /*for (auto n : Neighbours) //боковые ребра
     {
-        if (neighbours[n].id != null)
+        if (hasNeighbour(n))
         {
-            auto& nnode = nodeRef(neighbours[n]);
-            ushorty eindex = n * 2; //индекс ребра (для данной ячейки)
-            ushorty eindex_opposite = ((int)(n + 2) % 4) * 2; //индекс противоположного ребра (для соседа)
-            if (nnode.is_leaf) //если у соседа нет детей - склеиваем и обновляем записи о ребре и в ребре
+            auto& rnnode = nodeRef(neighbour(n));
+            if (rnnode.hasChildren()) //у соседа есть дети - только обновляем данные о ребрах и в ребрах 
             {
-                edgeId nedgeid = null; //id ребра, в которое будет перезаписано склеенное (определяется ниже)
-                switch (n)
-                {
-                case NEIGHBOUR_TOP:
-                    nedgeid = cTL.edges[eindex];
-                    forest.updateEdge(nedgeid, neighbours[n], ctag); //перезапись данных в склеенном ребре поверх первого старого
-                    forest.removeEdge(cTR.edges[eindex]); //удаление второго ребра
-                    break;
-                case NEIGHBOUR_RIGHT:
-                    nedgeid = cTR.edges[eindex];
-                    forest.updateEdge(nedgeid, ctag, neighbours[n]);
-                    forest.removeEdge(cBR.edges[eindex]);
-                    break;
-                case NEIGHBOUR_BOTTOM:
-                    nedgeid = cBR.edges[eindex];
-                    forest.updateEdge(nedgeid, ctag, neighbours[n]);
-                    forest.removeEdge(cBL.edges[eindex]);
-                    break;
-                case NEIGHBOUR_LEFT:
-                    nedgeid = cBL.edges[eindex];
-                    forest.updateEdge(nedgeid, neighbours[n], ctag);
-                    forest.removeEdge(cTL.edges[eindex]);
-                    break;
-                }
-                edges[eindex] = nedgeid; //запись о ребре в данной ячейке
-                edges[eindex + 1] = null; //второе ребро
-                nnode.edges[eindex_opposite] = nedgeid; //в соседней ячейке
-                nnode.edges[eindex_opposite + 1] = null; //второе ребро
+                gatherEdgesFromChildren(n);
             }
-            else //у соседа есть дети - только обновляем данные о ребрах и в ребрах 
+            else //нет детей - склеиваем и обновляем записи о ребре и в ребре
             {
-                switch (n)
-                {
-                case NEIGHBOUR_TOP:
-                    edges[eindex] = cTL.edges[eindex]; //запись ребра ребенка в данную ячейку
-                    edges[eindex + 1] = cTR.edges[eindex]; //второе ребро
-                    forest.updateEdge(edges[eindex], {}, ctag); //обновление одного тега в ребре на тег данной ячейки
-                    forest.updateEdge(edges[eindex + 1], {}, ctag); //второе ребро
-                    break;
-                case NEIGHBOUR_RIGHT:
-                    edges[eindex] = cTR.edges[eindex];
-                    edges[eindex + 1] = cBR.edges[eindex];
-                    forest.updateEdge(edges[eindex], ctag, {});
-                    forest.updateEdge(edges[eindex + 1], ctag, {});
-                    break;
-                case NEIGHBOUR_BOTTOM:
-                    edges[eindex] = cBR.edges[eindex];
-                    edges[eindex + 1] = cBL.edges[eindex];
-                    forest.updateEdge(edges[eindex], ctag, {});
-                    forest.updateEdge(edges[eindex + 1], ctag, {});
-                    break;
-                case NEIGHBOUR_LEFT:
-                    edges[eindex] = cBL.edges[eindex];
-                    edges[eindex + 1] = cTL.edges[eindex];
-                    forest.updateEdge(edges[eindex], {}, ctag);
-                    forest.updateEdge(edges[eindex + 1], {}, ctag);
-                    break;
-                }
+                joinEdge(n);
             }
         }
     }*/
@@ -1095,6 +1006,12 @@ bool TreeNode::hasNeighbour(Neighbour n) const //есть ли сосед по направлению
 bool TreeNode::hasNeighbour12(Neighbour12 n12) const
 {
     if (!neighbours12[static_cast<int>(n12)].isNull())
+        return true;
+    return false;
+}
+bool TreeNode::hasEdge(Edge e) const //есть ли ребро
+{
+    if (edges[static_cast<int>(e)] != null)
         return true;
     return false;
 }
