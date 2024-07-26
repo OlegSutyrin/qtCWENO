@@ -101,14 +101,14 @@ void QuadTreeForest::updateEdge(nodeEdgeId eid, NodeTag n1, NodeTag n2) //обновл
     try {
         if (edges.size() > eid && !edges[eid].isDeleted())
         {
-            if (!n1.isNull()) //если пришел null - не обновляем тег
+            if (!n1.isNull()) //если пришел не null - обновляем тег
                 edges[eid].setN1(n1);
             if (!n2.isNull())
                 edges[eid].setN2(n2);
         }
         else
         {
-            throw std::invalid_argument("edge deleted or doesn't exist");
+            throw std::invalid_argument("edge is deleted or doesn't exist");
         }
     }
     catch (const std::invalid_argument& e)
@@ -127,7 +127,7 @@ void QuadTreeForest::removeEdge(nodeEdgeId eid) //удаление ребра из списка
         }
         else
         {
-            throw std::invalid_argument("edge deleted or doesn't exist");
+            throw std::invalid_argument("edge is deleted or doesn't exist");
         }
     }
     catch (const std::invalid_argument& e)
@@ -381,6 +381,8 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для тест
             }
         }
         cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
+        //computeQuadraturePoints(); //расчет точек квадратуры в ребрах
+        //ExportForest();
     }
     computeQuadraturePoints(); //расчет точек квадратуры в ребрах
 }
@@ -640,10 +642,10 @@ void QuadTreeForest::exportEdges(std::string filename)
         if (!edge.isDeleted())
         {
             file_output << edge.dumpNeigboursVectors();
-            //auto& nnode1 = treeNode::getNode(edge.n1);
-            //auto& nnode2 = treeNode::getNode(edge.n2);
-            //if (!nnode1.is_leaf || !nnode2.is_leaf)
-                //cout << "suspicious edge! " << edge << endl;
+            auto& rn1 = TreeNode::nodeRef(edge.n1());
+            auto& rn2 = TreeNode::nodeRef(edge.n2());
+            if (rn1.hasChildren() || rn2.hasChildren())
+                cout << "suspicious edge! " << edge << endl;
         }
     }
 

@@ -92,7 +92,7 @@ public:
     void splitEdge(Neighbour n); //разделить ребро и обновить записи у себя и (бездетного) соседа
     void joinEdge(Neighbour n); //склеить ребро и обновить записи у себя и (бездетного) соседа
     void updateChildrenEdges(Neighbour n); //обновить ребра у своих и соседских детей
-    void gatherEdgesFromChildren(Neighbour n); //записать детские ребра сете и обновить ребра у соседских детей
+    void gatherEdgesFromChildren(Neighbour n); //записать детские ребра себе и обновить ребра у соседских детей
     int markToRefine(); //пометка ячейки к дроблению
     int refine(); //дробление ячейки
     void gatherDataFromChildren(); //сбор данных из детей для объединения

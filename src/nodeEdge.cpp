@@ -7,6 +7,10 @@
 
 #include <sstream>
 
+const NodeTag NodeEdge::n1() const { return n1_; }
+const NodeTag NodeEdge::n2() const { return n2_; }
+
+
 //accessors
 double NodeEdge::FQ(Equation eq) const { return FQ_[static_cast<int>(eq)]; } //компонента потока
 double NodeEdge::length() const { return distance(qps[0], qps[1]) / ISQ3; } //вычисление длины ребра по точкам квадратуры TODO: хранить вершины и длину в самом ребре
@@ -116,7 +120,7 @@ std::ostream& operator<<(std::ostream& os, const NodeEdge& edge) //output overlo
         os << " | ";
     else
         os << " - ";
-    os << edge.n1_;
+    os << edge.n2_;
     os << ", flux: (" << edge.FQ(Equation::density) << ", " << edge.FQ(Equation::momentum_x) << ", " << edge.FQ(Equation::momentum_y) << ", " << edge.FQ(Equation::energy) << ")";
     return os;
 }

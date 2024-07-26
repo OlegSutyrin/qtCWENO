@@ -17,6 +17,8 @@ public:
     NodeEdge(NodeTag n1, NodeTag n2, Orientation orientation) : n1_(n1), n2_(n2), orientation_(orientation) {}; //конструктор по двум ячейкам
     
     //accessors
+    const NodeTag n1() const;
+    const NodeTag n2() const;
     double FQ(Equation eq) const; //компонента потока
     double length() const; //вычисление длины ребра по точкам квадратуры TODO: хранить вершины и длину в самом ребре
 

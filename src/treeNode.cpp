@@ -493,27 +493,24 @@ void TreeNode::joinEdge(Neighbour n) //склеить ребро и обновить записи у себя и 
     switch (n)
     {
     case Neighbour::top: //общее ребро с соседом сверху
-        eid = childRef(Quadrant::top_left).edge(etype);
-        forest.updateEdge(eid, {}, tag()); //перезапись данных в склеенном ребре поверх первого старого
-        forest.removeEdge(childRef(Quadrant::top_right).edge(etype)); //удаление второго ребра
+        forest.removeEdge(childRef(Quadrant::top_left).edge(etype)); //удаление первого ребра
+        eid = childRef(Quadrant::top_right).edge(etype); //берется второе ребро, т.к. у бездетного соседа оно записано в нужном слоте
+        forest.updateEdge(eid, {}, tag()); //перезапись данных в склеенном ребре
         break;
     case Neighbour::right: //справа
-        eid = childRef(Quadrant::top_right).edge(etype);
-        forest.updateEdge(eid, tag(), {});
-        setEdge(etype, eid); //запись себе
-        forest.removeEdge(childRef(Quadrant::bottom_right).edge(etype));
-        break;
-    case Neighbour::bottom: //снизу
+        forest.removeEdge(childRef(Quadrant::top_right).edge(etype));
         eid = childRef(Quadrant::bottom_right).edge(etype);
         forest.updateEdge(eid, tag(), {});
-        setEdge(etype, eid); //запись себе
-        forest.removeEdge(childRef(Quadrant::bottom_left).edge(etype));
+        break;
+    case Neighbour::bottom: //снизу
+        forest.removeEdge(childRef(Quadrant::bottom_right).edge(etype));
+        eid = childRef(Quadrant::bottom_left).edge(etype);
+        forest.updateEdge(eid, tag(), {});
         break;
     case Neighbour::left: //слева
-        eid = childRef(Quadrant::bottom_left).edge(etype);
+        forest.removeEdge(childRef(Quadrant::bottom_left).edge(etype));
+        eid = childRef(Quadrant::top_left).edge(etype);
         forest.updateEdge(eid, {}, tag());
-        setEdge(etype, eid); //запись себе
-        forest.removeEdge(childRef(Quadrant::top_left).edge(etype));
         break;
     }
     setEdge(etype, eid); //запись о ребре в этой ячейке
@@ -523,43 +520,42 @@ void TreeNode::updateChildrenEdges(Neighbour n) //обновить ребра у своих и сосед
 {
     Edge etype = toEdge(n);
     nodeEdgeId eid = edge(etype);
-    auto& rnnode = nodeRef(neighbour(n));
     ChildrenRefs crefs(childRef(Quadrant::top_left), childRef(Quadrant::top_right), childRef(Quadrant::bottom_right), childRef(Quadrant::bottom_left));
     ChildrenTags ctags(crefs(Quadrant::top_left).tag(), crefs(Quadrant::top_right).tag(), crefs(Quadrant::bottom_right).tag(), crefs(Quadrant::bottom_left).tag());
     switch (n)
     {
     case Neighbour::top: //общее ребро с соседом сверху
-        forest.updateEdge(eid, neighbour(n), ctags(Quadrant::top_left)); //запись нового маленького ребра поверх большого старого
+        forest.updateEdge(eid, {}, ctags(Quadrant::top_left)); //частичное обновление ребра
         crefs(Quadrant::top_left).setEdge(etype, eid); //запись в ребенке
-        rnnode.setEdge(opposite(etype), eid); //запись в соседней ячейке
-        crefs(Quadrant::top_right).setEdge(etype, forest.addEdge(NodeEdge(neighbour(n), ctags(Quadrant::top_right), Orientation::horizontal))); //создание второго ребра и запись в ребенке
-        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::top_right).edge(etype)); //запись о втором ребре в соседней ячейке
+        eid = edge(next(etype));
+        forest.updateEdge(eid, {}, ctags(Quadrant::top_right)); //второе ребро
+        crefs(Quadrant::top_right).setEdge(etype, eid);
         break;
     case Neighbour::right: //справа
-        forest.updateEdge(eid, ctags(Quadrant::top_right), neighbour(n));
+        forest.updateEdge(eid, ctags(Quadrant::top_right), {});
         crefs(Quadrant::top_right).setEdge(etype, eid);
-        rnnode.setEdge(opposite(etype), eid);
-        crefs(Quadrant::bottom_right).setEdge(etype, forest.addEdge(NodeEdge(ctags(Quadrant::bottom_right), neighbour(n), Orientation::vertical)));
-        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::bottom_right).edge(etype));
+        eid = edge(next(etype));
+        forest.updateEdge(eid, ctags(Quadrant::bottom_right), {});
+        crefs(Quadrant::bottom_right).setEdge(etype, eid);
         break;
     case Neighbour::bottom: //снизу
-        forest.updateEdge(eid, ctags(Quadrant::bottom_right), neighbour(n));
+        forest.updateEdge(eid, ctags(Quadrant::bottom_right), {});
         crefs(Quadrant::bottom_right).setEdge(etype, eid);
-        rnnode.setEdge(opposite(etype), eid);
-        crefs(Quadrant::bottom_left).setEdge(etype, forest.addEdge(NodeEdge(ctags(Quadrant::bottom_left), neighbour(n), Orientation::horizontal)));
-        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::bottom_left).edge(etype));
+        eid = edge(next(etype));
+        forest.updateEdge(eid, ctags(Quadrant::bottom_left), {});
+        crefs(Quadrant::bottom_left).setEdge(etype, eid);
         break;
     case Neighbour::left: //слева
-        forest.updateEdge(eid, neighbour(n), ctags(Quadrant::bottom_left));
+        forest.updateEdge(eid, {}, ctags(Quadrant::bottom_left));
         crefs(Quadrant::bottom_left).setEdge(etype, eid);
-        rnnode.setEdge(opposite(etype), eid);
-        crefs(Quadrant::top_left).setEdge(etype, forest.addEdge(NodeEdge(neighbour(n), ctags(Quadrant::top_left), Orientation::vertical)));
-        rnnode.setEdge(opposite(next(etype)), crefs(Quadrant::top_left).edge(etype));
+        eid = edge(next(etype));
+        forest.updateEdge(eid, {}, ctags(Quadrant::top_left));
+        crefs(Quadrant::top_left).setEdge(etype, eid);
         break;
     }
 }
 
-void TreeNode::gatherEdgesFromChildren(Neighbour n)
+void TreeNode::gatherEdgesFromChildren(Neighbour n) //записать детские ребра себе и обновить ребра у соседских детей
 {
     Edge etype = toEdge(n);
     nodeEdgeId eid = null; //определяется ниже
@@ -778,11 +774,11 @@ int TreeNode::refine() //дробление ячейки
         if (hasNeighbour(n))
         {
             auto& rnnode = nodeRef(neighbour(n));
-            if (rnnode.hasChildren()) //дети есть, ребро уже разделено, нужно только обновить данные в ребрах и внести их своим детям
+            if (rnnode.hasChildren()) //у соседа есть дети, ребро уже разделено, нужно только обновить данные в ребрах и внести их своим детям
             {
                 updateChildrenEdges(n);
             }
-            else //у соседа нет детей, нужно разделить ребро
+            else //детей нет, нужно разделить ребро
             {
                 splitEdge(n);
             }
@@ -897,7 +893,7 @@ int TreeNode::coarsen() //склейка ячейки
     forest.removeEdge(crefs(Quadrant::top_left).edge(Edge::bottom1));
     forest.removeEdge(crefs(Quadrant::bottom_right).edge(Edge::top1));
     forest.removeEdge(crefs(Quadrant::bottom_right).edge(Edge::left1));
-    /*for (auto n : Neighbours) //боковые ребра
+    for (auto n : Neighbours) //боковые ребра
     {
         if (hasNeighbour(n))
         {
@@ -911,7 +907,7 @@ int TreeNode::coarsen() //склейка ячейки
                 joinEdge(n);
             }
         }
-    }*/
+    }
 
     //удаление детей
     rtree.vacateNodeGroup(tag().depth()+1, childrenId_); //пометка группы ячеек для нод свободными
