@@ -54,6 +54,7 @@ public:
     bool exportNeighbours = false; //выводить ли соседей (ASCII)
     bool exportNeighbours12 = false; //выводить ли соседей с учетом диагональных и разделения ребер (ASCII)
     bool exportEdges = false; //выводить ли ребра (ASCII)
+    bool exportNodeEdges = false; //выводить ли ребра ячеек (ASCII)
     bool exportEdgeFluxes = false; //выводить ли потоки (ASCII)
     bool exportPlt = true; //выводить ли бинарные .plt-файлы
 

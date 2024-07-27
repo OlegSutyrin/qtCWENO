@@ -35,8 +35,8 @@ class TreeNode
     std::array<NodeTag, NEIGHBOURS_NUM> neighbours = {}; //соседи(используютс€ в основном дл€ структуры дерева)
     std::array<NodeTag, MAX_NEIGHBOURS12_NUM> neighbours12 = {}; //соседи с учетом диагоналей и разбиени€ ребер (используютс€ дл€ CWENO)
     //номера ребер, составл€ющих стороны €чейки (до EDGES_NUM=8 штук с учетом возможного разделени€ ребер)
-    std::array<nodeEdgeId, EDGES_NUM> edges = {}; //нумераци€ по часовой стрелке, начина€ с левой половины верхней стороны
-    //(?)значени€ по умолчанию дл€ edges[EDGES_NUM] нужно укзаывать €вно, т.к. нет дефолтного конструктора дл€ nodeEdgeId
+    std::array<nodeEdgeId, EDGES_NUM> edges = { null, null, null, null, null, null, null, null }; //нумераци€ по часовой стрелке, начина€ с левой половины верхней стороны
+    //null по умолчанию дл€ edges[EDGES_NUM] нужно укзаывать €вно, т.к. nodeEdgeId по дефолту = 0
     double polyCoeffs[EQ_NUM][POLY_COEFF_NUM] = {}; //коэффициенты параболоида CWENO дл€ каждого уравнени€
 
     Eigen::VectorXd coeffs; //вектор неизвестных (px, py, pxx, pxy, pyy) дл€ оптимального полинома
@@ -106,7 +106,7 @@ public:
     bool hasGrandChildren(Neighbour n) const; //есть ли внуки с определенной стороны
     bool hasNeighbour(Neighbour n) const; //есть ли сосед по направлению
     bool hasNeighbour12(Neighbour12 n12) const;
-    bool hasEdge(Edge e) const; //есть ли ребро
+    bool hasEdge(Edge etype) const; //есть ли ребро
 
     //other
     static TreeNode& nodeRef(const NodeTag& tag); //ссылка на ноду по тэгу (static - обща€ функци€ дл€ всех нод)
@@ -116,6 +116,7 @@ public:
     std::string dump() const; //дамп ноды в строку
     std::string dumpNeighbourVector(Neighbour n) const; //дамп соседа в виде вектора
     std::string dumpNeighbour12Vector(Neighbour12 n12) const; //дамп соседа12 в виде вектора
+    std::string dumpEdgeVector(Edge etype) const; //дамп ребра €чейки в виде вектора
 
     friend class QuadTreeForest; //дл€ глобальных функций TODO:разобратьс€, как лучше реализовать вложенные циклы без нарушени€ инкапсул€ции
     friend class QuadTree;

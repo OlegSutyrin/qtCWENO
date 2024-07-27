@@ -1,7 +1,7 @@
 #!MC 1410
-$!VarSet |LFDSFN1| = '"output_001.dat"'
+$!VarSet |LFDSFN1| = '"output_000.dat"'
 $!VarSet |LFDSVL1| = '"X" "Y" "Level" "Size" "rho" "u" "v" "p" "tree" "magGradRho"'
-$!VarSet |LFDSFN2| = '"output_edges_001.dat"'
+$!VarSet |LFDSFN2| = '"output_nodeEdges_000.dat"'
 $!VarSet |LFDSVL2| = '"X" "Y" "Level" "Size" "rho" "u" "v" "p" "tree" "magGradRho" "dx" "dy"'
 $!SetStyleBase Factory
 $!CreateColorMap 
@@ -211,9 +211,9 @@ $!Page
     PaperGridSpacing = HalfInch
     RegionInWorkArea
       {
-      X1 = 1
+      X1 = -1
       Y1 = 0.25
-      X2 = 9
+      X2 = 12
       Y2 = 8.25
       }
     }
@@ -238,9 +238,6 @@ $!ReadDataSet  '|LFDSFN2|'
   VarNameList = '|LFDSVL2|'
 $!RemoveVar |LFDSVL2|
 $!RemoveVar |LFDSFN2|
-$!ExtendedCommand 
-  CommandProcessorID = 'Strand Editor'
-  Command = 'ZoneSet=3;AssignStrands=TRUE;StrandValue=3;AssignSolutionTime=TRUE;TimeValue=0;DeltaValue=1;TimeOption=Automatic;'
 $!FrameLayout 
   ShowBorder = No
   ShowHeader = No
@@ -259,7 +256,7 @@ $!PlotType  = Cartesian2D
 $!FrameName  = 'Frame 001'
 $!GlobalTime 
   SolutionTime = 0
-$!ActiveFieldMaps  =  [1-3]
+$!ActiveFieldMaps  =  [1-2]
 $!GlobalRGB 
   RangeMin = 0
   RangeMax = 1
@@ -462,7 +459,7 @@ $!GlobalContour  8
 $!GlobalTwoDVector 
   UVar = 11
   VVar = 12
-  RelativeLength = 1
+  RelativeLength = 0.7
 $!GlobalScatter 
   Var = 4
   RelativeSize = 1.4
@@ -591,66 +588,6 @@ $!FieldMap  [2]
     {
     LightingEffect = Gouraud
     }
-$!FieldMap  [3]
-  Mesh
-    {
-    Color = Black
-    }
-  Contour
-    {
-    ContourType = Flood
-    Color = Black
-    UseLightingEffect = Yes
-    }
-  Vector
-    {
-    Color = Black
-    }
-  Scatter
-    {
-    SymbolShape
-      {
-      GeomShape = Circle
-      }
-    Color = Black
-    FillMode = UseSpecificColor
-    FrameSize = 1
-    }
-  Shade
-    {
-    Color = Custom2
-    }
-  EdgeLayer
-    {
-    Show = No
-    Color = Black
-    LineThickness = 0.1
-    }
-  Points
-    {
-    PointsToPlot = SurfaceNodes
-    }
-  Surfaces
-    {
-    SurfacesToPlot = KPlanes
-    IRange
-      {
-      Max = 1
-      }
-    }
-  VolumeMode
-    {
-    VolumeObjectsToPlot
-      {
-      ShowIsosurfaces = No
-      ShowSlices = No
-      ShowStreamtraces = No
-      }
-    }
-  Effects
-    {
-    LightingEffect = Gouraud
-    }
 $!TwoDAxis 
   XDetail
     {
@@ -675,9 +612,9 @@ $!TwoDAxis
   XDetail
     {
     ShowAxis = No
-    RangeMin = -1.2302929988930655369
-    RangeMax = 1.2196325359594597515
-    GRSpacing = 0.5
+    RangeMin = -0.6218980131706132175
+    RangeMax = -0.31159535677678334986
+    GRSpacing = 0.05
     TickLabel
       {
       TextShape
@@ -693,9 +630,9 @@ $!TwoDAxis
   YDetail
     {
     ShowAxis = No
-    RangeMin = -0.60584013405897563231
-    RangeMax = 1.8440854007935496561
-    GRSpacing = 0.5
+    RangeMin = -0.15075604255139635201
+    RangeMax = 0.15954661384243351563
+    GRSpacing = 0.05
     TickLabel
       {
       TextShape
@@ -934,18 +871,6 @@ $!FieldLayers
   ShowEdge = No
 $!StreamtraceLayers 
   Show = No
-$!AttachGeom 
-  GeomType = Square
-  AnchorPos
-    {
-    X = -1
-    Y = -1
-    }
-  Color = White
-  LinePattern = Dotted
-  LineThickness = 0.4
-  RawData
-2 
 $!FrameControl ActivateByNumber
   Frame = 1
 $!SetStyleBase Config

@@ -50,6 +50,7 @@ enum class Edge { //ребра €чейки, до двух на каждую сторону
     top1, top2, right1, right2, bottom1, bottom2, left1, left2, count
 };
 const int EDGES_NUM = static_cast<int>(Edge::count); //число возможных ребер в €чейке
+const std::array <Edge, EDGES_NUM> Edges = { Edge::top1, Edge::top2, Edge::right1, Edge::right2, Edge::bottom1, Edge::bottom2, Edge::left1, Edge::left2 }; //дл€ циклов
 
 enum class Equation : unsigned int { //уравнени€
     density, momentum_x, momentum_y, energy, count

@@ -13,6 +13,7 @@ const NodeTag NodeEdge::n2() const { return n2_; }
 
 //accessors
 double NodeEdge::FQ(Equation eq) const { return FQ_[static_cast<int>(eq)]; } //компонента потока
+Point NodeEdge::middle() { return ::middle(qps[0], qps[1]); } //(:: - глобальное namespace)
 double NodeEdge::length() const { return distance(qps[0], qps[1]) / ISQ3; } //вычисление длины ребра по точкам квадратуры TODO: хранить вершины и длину в самом ребре
 
 //mutators

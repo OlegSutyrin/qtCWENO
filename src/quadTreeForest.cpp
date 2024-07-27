@@ -66,7 +66,24 @@ QuadTree& QuadTreeForest::getTreeByCoords(Point p) //поиск дерева по координатам
         return trees[0]; //to suppress warning
     }
 }
-NodeEdge& QuadTreeForest::edgeRef(nodeEdgeId eid) { return edges[eid]; } //ссылка на ребро по id
+NodeEdge& QuadTreeForest::edgeRef(nodeEdgeId eid) //ссылка на ребро по id
+{ 
+    try {
+        if (edges.size() > eid && !edges[eid].isDeleted())
+        {
+            return edges[eid];
+        }
+        else
+        {
+            throw std::invalid_argument("edge is deleted or doesn't exist");
+        }
+    }
+    catch (const std::invalid_argument& e)
+    {
+        cout << "forest.edgeRef() error: " << e.what() << ", eid: " << eid << endl;
+        return edges[0]; //to suppress warning
+    }
+}
 
 //mutators -----------------------
 void QuadTreeForest::initialize() //выделение памяти под деревья
@@ -625,7 +642,6 @@ void QuadTreeForest::exportNeighbours12(std::string filename)
     }
     file_output.close();
     return;
-
 }
 
 void QuadTreeForest::exportEdges(std::string filename)
@@ -661,6 +677,35 @@ void QuadTreeForest::exportEdges(std::string filename)
     }
     return;
 
+}
+
+void QuadTreeForest::exportNodeEdges(std::string filename) //вывод ребер ячеек в файл (Tecplot ASCII vectors)
+{
+    std::ofstream file_output;
+    file_output.open(filename);
+    file_output << "VARIABLES = \"x\", \"y\", \"dx\", \"dy\"" << endl;
+    file_output << "ZONE T = \"Node edges\" ";
+    file_output << "STRANDID = 1 SOLUTIONTIME = " << std::to_string(globals.time) << endl;
+
+    for (auto& rtree : trees)
+    {
+        for (auto& rnodes_level : rtree.nodes)
+        {
+            for (auto& rnode : rnodes_level)
+            {
+                if (!rnode.isDeleted() && rnode.isLeaf())
+                {
+                    for (auto e : Edges)
+                    {
+                        if (rnode.hasEdge(e))
+                            file_output << rnode.dumpEdgeVector(e);
+                    }
+                }
+            }
+        }
+    }
+    file_output.close();
+    return;
 }
 
 

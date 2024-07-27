@@ -513,7 +513,9 @@ void TreeNode::joinEdge(Neighbour n) //склеить ребро и обновить записи у себя и 
         forest.updateEdge(eid, {}, tag());
         break;
     }
-    setEdge(etype, eid); //запись о ребре в этой ячейке
+    setEdge(etype, eid); //перенос записи о ребре в первый слот
+    setEdge(next(etype), null); //удаление записи о ребре во втором слоте
+    nodeRef(neighbour(n)).setEdge(opposite(etype), null); //удаление записи о втором ребре у соседа
 }
 
 void TreeNode::updateChildrenEdges(Neighbour n) //обновить ребра у своих и соседских детей
@@ -1005,9 +1007,9 @@ bool TreeNode::hasNeighbour12(Neighbour12 n12) const
         return true;
     return false;
 }
-bool TreeNode::hasEdge(Edge e) const //есть ли ребро
+bool TreeNode::hasEdge(Edge etype) const //есть ли ребро
 {
-    if (edges[static_cast<int>(e)] != null)
+    if (edges[static_cast<int>(etype)] != null)
         return true;
     return false;
 }
@@ -1084,8 +1086,8 @@ std::string TreeNode::dump() const //дамп ноды в строку
 
     return buffer.str();
 }
-const double Dx[] = { 0, 1, 0, -1 }; //для вычисления векторов
-const double Dy[] = { 1, 0, -1, 0 };
+static const double Dx[] = { 0, 1, 0, -1 }; //для вычисления векторов
+static const double Dy[] = { 1, 0, -1, 0 };
 std::string TreeNode::dumpNeighbourVector(Neighbour n) const //дамп соседа в виде вектора
 {
     if (!hasNeighbour(n))
@@ -1101,8 +1103,8 @@ std::string TreeNode::dumpNeighbourVector(Neighbour n) const //дамп соседа в вид
     buffer << std::to_string(x) << " " << std::to_string(y) << " " << std::to_string(dx) << " " << std::to_string(dy) << endl;
     return buffer.str();
 }
-const double Dx12[] = { -0.5, 0.5, 1,   1,    1,  1, 0.5, -0.5, -1,   -1,  -1, -1 }; //для вычисления векторов
-const double Dy12[] = { 1,   1, 1, 0.5, -0.5, -1,  -1,   -1, -1, -0.5, 0.5,  1 };
+static const double Dx12[] = { -0.5, 0.5, 1,   1,    1,  1, 0.5, -0.5, -1,   -1,  -1, -1 };
+static const double Dy12[] = {    1,   1, 1, 0.5, -0.5, -1,  -1,   -1, -1, -0.5, 0.5,  1 };
 std::string TreeNode::dumpNeighbour12Vector(Neighbour12 n12) const
 {
     if (!hasNeighbour12(n12))
@@ -1112,15 +1114,26 @@ std::string TreeNode::dumpNeighbour12Vector(Neighbour12 n12) const
     double x = box().center().x + 0.9 * Dx12[static_cast<int>(n12)] * box().size() / 2.0; //стартовая точка вектора
     double y = box().center().y + 0.9 * Dy12[static_cast<int>(n12)] * box().size() / 2.0;
     TreeNode& rnnode = nodeRef(neighbour12(n12));
-
-    //заплатка
-    if (rnnode.tag().tree() == 0)
-        return "";
-
-
-
     double dx = 0.85 * (rnnode.box().center().x - x); //вектор
     double dy = 0.85 * (rnnode.box().center().y - y);
+
+    buffer << std::to_string(x) << " " << std::to_string(y) << " " << std::to_string(dx) << " " << std::to_string(dy) << endl;
+    return buffer.str();
+}
+static const double Dxe[] = { -0.5, 0.5,   1,    1, 0.5, -0.5,   -1,  -1 }; //для вычисления стартовых точек
+static const double Dye[] = {    1,   1, 0.5, -0.5,  -1,   -1, -0.5, 0.5 };
+std::string TreeNode::dumpEdgeVector(Edge etype) const
+{
+    if (!hasEdge(etype))
+        return "(no such edge)";
+
+    std::stringstream buffer;
+    NodeEdge& redge = forest.edgeRef(edge(etype));
+    double x = box().center().x + 0.5 * Dxe[static_cast<int>(etype)] * box().size() / 2.0; //стартовая точка вектора
+    double y = box().center().y + 0.5 * Dye[static_cast<int>(etype)] * box().size() / 2.0;
+    Point ecenter = redge.middle();
+    double dx = 0.85 * (ecenter.x - x); //вектор
+    double dy = 0.85 * (ecenter.y - y);
 
     buffer << std::to_string(x) << " " << std::to_string(y) << " " << std::to_string(dx) << " " << std::to_string(dy) << endl;
     return buffer.str();

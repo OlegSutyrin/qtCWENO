@@ -56,6 +56,7 @@ ProblemConfig::ProblemConfig(std::string filename) //конструктор по json-файлу
     exportNeighbours = j["export"]["neighbours"];
     exportNeighbours12 = j["export"]["neighbours12"];
     exportEdges = j["export"]["edges"];
+    exportNodeEdges = j["export"]["node edges"];
     exportEdgeFluxes = j["export"]["fluxes"];
     exportPlt = j["export"]["plt"];
 

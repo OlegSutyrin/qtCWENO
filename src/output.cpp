@@ -327,6 +327,14 @@ void ExportForest() //вывод всего леса (кроме ghost'ов)
         cout << "Exported to " << filename.str() << "." << endl;
         globals.file_output << "Exported to " << filename.str() << "." << endl;
     }
+    if (config.exportNodeEdges)
+    {
+        filename.str("");
+        filename << "output_nodeEdges_" << std::setw(3) << std::setfill('0') << globals.export_number << ".dat";
+        forest.exportNodeEdges(filename.str()); //ребра
+        cout << "Exported to " << filename.str() << "." << endl;
+        globals.file_output << "Exported to " << filename.str() << "." << endl;
+    }
     /*if (config.exportEdgeFluxes)
     {
         filename.str("");

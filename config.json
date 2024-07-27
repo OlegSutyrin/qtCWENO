@@ -38,6 +38,7 @@
     "neighbours": true, //соседи (ASCII)
     "neighbours12": true, //соседи с учетом диагональных и разделения ребер (ASCII)
     "edges": true, //ребра (ASCII)
+    "node edges": true, //ребра ячеек (ASCII)
     "fluxes": false, //потоки (ASCII)
     "plt": false //бинарные .plt
   },
