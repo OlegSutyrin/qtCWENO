@@ -367,7 +367,7 @@ void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
         cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
     }
     computeQuadraturePoints(); //расчет точек квадратуры в ребрах
-    //updateEigenObjects(); //перерасчет матриц Eigen в ячейках
+    updateEigenObjects(); //перерасчет матриц Eigen в ячейках
     return;
 }
 
@@ -402,6 +402,7 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для тест
         //ExportForest();
     }
     computeQuadraturePoints(); //расчет точек квадратуры в ребрах
+    updateEigenObjects(); //перерасчет матриц Eigen в ячейках
 }
 
 void QuadTreeForest::meshUpdate() //обновление сетки
@@ -450,7 +451,7 @@ void QuadTreeForest::meshUpdate() //обновление сетки
         }
     }
     computeQuadraturePoints(); //перерасчет точек квадратуры в ребрах
-    //updateEigenObjects(); //перерасчет матриц Eigen в ячейках
+    updateEigenObjects(); //перерасчет матриц Eigen в ячейках
     return;
 }
 
@@ -463,6 +464,26 @@ void QuadTreeForest::computeQuadraturePoints() //расчет точек квадратуры во всех
             redge.computeQuadraturePoints();
         }
     }
+}
+
+void QuadTreeForest::updateEigenObjects() //создание или обновление Eigen объектов для всех ячеек
+{
+    for (auto& rtree : trees)
+    {
+        if (rtree.isGhost()) //пропуск ghost-деревьев
+            continue;
+        for (auto& rnodes_level : rtree.nodes)
+        {
+            for (auto& rnode : rnodes_level)
+            {
+                if (!rnode.isDeleted() && !rnode.hasChildren())
+                {
+                    rnode.updateEigenObjects();
+                }
+            }
+        }
+    }
+    return;
 }
 
 void QuadTreeForest::initialCondition() //начальные условия

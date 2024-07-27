@@ -950,6 +950,187 @@ int TreeNode::coarsen() //склейка €чейки
     return 0;
 }
 
+//TODO: сделать корректную версию дл€ осесимметричных координат
+void TreeNode::updateEigenObjects() //создание или обновление Eigen матриц и т.д. после изменени€ сетки
+{
+    static int variables_num = POLY_COEFF_NUM; //число неизвестных (= число столбцов матрицы)
+    const int equations_num = neighbours12Num(); //число уравнений (= число строк матрицы)
+    coeffs = Eigen::VectorXd(variables_num);
+    J = Eigen::MatrixXd(equations_num, variables_num);
+    rs = Eigen::VectorXd(equations_num);
+    decomp = Eigen::HouseholderQR<Eigen::MatrixXd>(equations_num, variables_num);
+
+    const double x = box().center().x; //координаты центра данной €чейки
+    const double y = box().center().y;
+    const double h = box().size();
+    int row = 0;
+    for (auto& rn12tag : neighbours12)
+    {
+        if (!rn12tag.isNull())
+        {
+            auto& nnode = nodeRef(rn12tag);
+            const double dx = nnode.box().center().x - x; //компоненты отрезка до центра соседа
+            const double dy = nnode.box().center().y - y;
+            const double nh = nnode.box().size(); //длина стороны соседа
+            int col = 0;
+            J(row, col++) = dx;
+            J(row, col++) = dy;
+            J(row, col++) = 0.5 * (dx * dx + 1.0 / 12.0 * (nh * nh - h * h));
+            J(row, col++) = dx * dy;
+            J(row, col++) = 0.5 * (dy * dy + 1.0 / 12.0 * (nh * nh - h * h));
+            row++;
+        }
+    }
+    decomp.compute(J);
+
+    //линейные функции (TODO: переписать без массивов - посчитать, сколько точек, создать объекты Eigen и пробежатьс€ по точкам)
+    static const int PTS_MAX = 5; //максимальное число точек, что могут попасть в подшаблон
+    Point ncenters[PTS_MAX]{};
+    CellData nds[PTS_MAX];
+    coeffsl = Eigen::VectorXd(2);
+    for (auto q : Quadrants)
+    {
+        int pts = 0; //число €чеек, вошедших в подшлаблон
+        for (auto& rn12tag : neighbours12)
+        {
+            if (!rn12tag.isNull())
+            {
+                auto& rnnode = nodeRef(rn12tag);
+                if (isNodeInSubstencil(q, rnnode))
+                {
+                    ncenters[pts] = rnnode.box().center();
+                    pts++;
+                }
+            }
+        }
+        const int nq = static_cast<int>(q);
+        Jl[nq] = Eigen::MatrixXd(pts, 2);
+        rsl[nq] = Eigen::VectorXd(pts);
+        decompl[nq] = Eigen::HouseholderQR<Eigen::MatrixXd>(pts, 2);
+        for (int p = 0; p < pts; p++)
+        {
+            double dx = ncenters[p].x - x;
+            double dy = ncenters[p].y - y;
+            Jl[nq](p, 0) = dx;
+            Jl[nq](p, 1) = dy;
+        }
+        decompl[nq].compute(Jl[nq]);
+    }
+    return;
+}
+
+static const double ALPHA0 = 0.5; //коэффициент дл€ параболоида P0
+static const double ALPHA1 = 0.125; //дл€ остальных (линейных) 4 функций
+void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWENO полинома
+{
+    static const int variables_num = POLY_COEFF_NUM; //число неизвестных (= число столбцов матрицы)
+    if (forest.treeRef(tag().tree()).isGhost()) //нода в ghost-дереве
+    {
+        for (auto eq : Equations)
+            for (int i = 0; i < POLY_COEFF_NUM; i++)
+                polyCoeffs[static_cast<int>(eq)][i] = 0.0;
+        return;
+    }
+
+    const int equations_num = neighbours12Num(); //число уравнений (= число строк матрицы)
+    auto& rdata = dataRef();
+
+    double Popt_coeffs[POLY_COEFF_NUM]{}; //коэффициенты дл€ оптимального (осциллирующего) полинома
+    Quadrant cq = static_cast<Quadrant>(tag().id() % QUADRANTS_NUM); //квадрант текущей ноды среди прочих siblings
+    for (auto eq : Equations)
+    {
+        //оптимальный полином
+        int row = 0;
+        for (auto& rn12tag : neighbours12)
+        {
+            if (!rn12tag.isNull())
+            {
+                auto& rnnode = nodeRef(rn12tag);
+                auto& rndata = rnnode.dataRef();
+                rs(row) = rndata.Qref(rk)(eq) - rdata.Qref(rk)(eq);
+                row++;
+            }
+        }
+        coeffs = decomp.solve(rs);
+        for (int c = 0; c < POLY_COEFF_NUM; c++)
+            Popt_coeffs[c] = coeffs(c);
+
+        //линейные функции (TODO: переписать без массивов - посчитать, сколько точек, создать объекты Eigen и пробежатьс€ по точкам)
+        static const int PTS_MAX = 5; //максимальное число точек, что могут попасть в подшаблон
+        CellData nds[PTS_MAX];
+        double linear_coeffs[QUADRANTS_NUM][2];
+        for (auto q : Quadrants)
+        {
+            int pts = 0; //число €чеек, вошедших в подшлаблон
+            for (auto& rn12tag : neighbours12)
+            {
+                if (!rn12tag.isNull())
+                {
+                    auto& rnnode = nodeRef(rn12tag);
+                    if (isNodeInSubstencil(q, rnnode))
+                    {
+                        nds[pts] = rnnode.data(); //копи€ данных
+                        pts++;
+                    }
+                }
+            }
+            const int nq = static_cast<int>(q);
+            for (int p = 0; p < pts; p++)
+            {
+                rs(row) = nds[p].Qref(rk)(eq) - rdata.Qref(rk)(eq);
+            }
+            coeffsl = decompl[nq].solve(rsl[nq]);
+            linear_coeffs[nq][0] = coeffsl(0);
+            linear_coeffs[nq][1] = coeffsl(1);
+        } //quadrants loop
+
+        //параболоид P0: Popt = ALPHA0 P0 + sum(ALPHA1 * linear funcs)
+        double P0_coeffs[POLY_COEFF_NUM]{};
+        for (int c = 0; c < POLY_COEFF_NUM; c++)
+            P0_coeffs[c] = Popt_coeffs[c] / ALPHA0;
+        for (auto q : Quadrants)
+        {
+            const int nq = static_cast<int>(q);
+            P0_coeffs[0] -= ALPHA1 * linear_coeffs[nq][0] / ALPHA0;
+            P0_coeffs[1] -= ALPHA1 * linear_coeffs[nq][1] / ALPHA0;
+        }
+
+        //WENO3 веса
+        double h = box().size(); //длина стороны €чейки
+        double beta[QUADRANTS_NUM + 1]{}; //smoothness indicators
+        double omega[QUADRANTS_NUM + 1]{}; //weights
+        double omega_sum = 0.0;
+        for (auto q : Quadrants)
+        {
+            const int nq = static_cast<int>(q);
+            beta[nq] = h * h * (linear_coeffs[nq][0] * linear_coeffs[nq][0] + linear_coeffs[nq][1] * linear_coeffs[nq][1]);
+            omega[nq] = ALPHA1 / (h + beta[nq]) / (h + beta[nq]); //h вместо epsilon (Semplice2015)
+            omega_sum += omega[nq];
+        }
+        beta[QUADRANTS_NUM] = h * h * (P0_coeffs[0] * P0_coeffs[0] + P0_coeffs[1] * P0_coeffs[1]
+            + h * h * (13.0 / 12.0 * P0_coeffs[2] * P0_coeffs[2] + 7.0 / 6.0 * P0_coeffs[3] * P0_coeffs[3] + 13.0 / 12.0 * P0_coeffs[4] * P0_coeffs[4]));
+        omega[QUADRANTS_NUM] = ALPHA0 / (h + beta[QUADRANTS_NUM]) / (h + beta[QUADRANTS_NUM]);
+        omega_sum += omega[QUADRANTS_NUM];
+        double alpha[QUADRANTS_NUM + 1]{}; //normalized weights
+        for (auto q : Quadrants)
+            alpha[static_cast<int>(q)] = omega[static_cast<int>(q)] / omega_sum;
+        alpha[QUADRANTS_NUM] = omega[QUADRANTS_NUM] / omega_sum;
+
+        //финальна€ реконструкци€
+        const int neq = static_cast<int>(eq);
+        for (int c = 0; c < POLY_COEFF_NUM; c++)
+            polyCoeffs[neq][c] = alpha[QUADRANTS_NUM] * P0_coeffs[c];
+        for (auto q : Quadrants)
+        {
+            const int nq = static_cast<int>(q);
+            polyCoeffs[neq][0] += alpha[nq] * linear_coeffs[nq][0];
+            polyCoeffs[neq][1] += alpha[nq] * linear_coeffs[nq][1];
+        }
+    } //eq loop
+    return;
+
+}
+
 //inspectors -----------------------
 bool TreeNode::isDeleted() const { return is_deleted; }
 bool TreeNode::isLeaf() const { return is_leaf; }
@@ -1011,6 +1192,41 @@ bool TreeNode::hasEdge(Edge etype) const //есть ли ребро
 {
     if (edges[static_cast<int>(etype)] != null)
         return true;
+    return false;
+}
+int TreeNode::neighbours12Num() const //число соседей12 TODO: кешировать(?)
+{
+    int ret = 0;
+    for (auto n12 : Neighbours12)
+        if (hasNeighbour12(n12))
+            ret++;
+    return ret;
+}
+bool TreeNode::isNodeInSubstencil(Quadrant q, const TreeNode& rnnode) const //попадает ли €чейка в подшаблон дл€ линейной функции
+{
+    switch (q)
+    {
+    case Quadrant::top_left:
+        if (rnnode.box().center().x - 0.5 * rnnode.box().size() - DOUBLE_EPS12 < box().center().x &&
+            rnnode.box().center().y + 0.5 * rnnode.box().size() + DOUBLE_EPS12 > box().center().y)
+            return true;
+        break;
+    case Quadrant::top_right:
+        if (rnnode.box().center().x + 0.5 * rnnode.box().size() + DOUBLE_EPS12 > box().center().x &&
+            rnnode.box().center().y + 0.5 * rnnode.box().size() + DOUBLE_EPS12 > box().center().y)
+            return true;
+        break;
+    case Quadrant::bottom_right:
+        if (rnnode.box().center().x + 0.5 * rnnode.box().size() + DOUBLE_EPS12 > box().center().x &&
+            rnnode.box().center().y - 0.5 * rnnode.box().size() - DOUBLE_EPS12 < box().center().y)
+            return true;
+        break;
+    case Quadrant::bottom_left:
+        if (rnnode.box().center().x - 0.5 * rnnode.box().size() - DOUBLE_EPS12 < box().center().x &&
+            rnnode.box().center().y - 0.5 * rnnode.box().size() - DOUBLE_EPS12 < box().center().y)
+            return true;
+        break;
+    }
     return false;
 }
 //uncategorized -----------------------

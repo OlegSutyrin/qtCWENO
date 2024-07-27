@@ -114,7 +114,9 @@ std::ostream& operator<<(std::ostream& os, const ConservativeVector& rhs) //outp
     os << ")";
     return os;
 }
+
 //------------------------------------------------------------------- CellData -------------------------------------------------------------------
+ConservativeVector& CellData::Qref(rkStep rk) { return Qn[static_cast<int>(rk)]; } //ссылка на вектор переменных
 double CellData::rho(rkStep rk) const { return Qn[rk].rho(y); }; //деление на y для осесимметричных координат (в декартовых y в CellData задается равным 1)
 double CellData::u(rkStep rk) const { return Qn[rk].u(y); };
 double CellData::v(rkStep rk) const { return Qn[rk].v(y); };

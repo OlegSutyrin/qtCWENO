@@ -44,9 +44,9 @@ class TreeNode
     Eigen::VectorXd rs; //вектор правых частей системы
     Eigen::HouseholderQR<Eigen::MatrixXd> decomp; //решатель
     Eigen::VectorXd coeffsl; //вектор неизвестных (px, py) дл€ линейных функций
-    Eigen::MatrixXd Jl[4]; //по одной дл€ каждого подшаблона
-    Eigen::VectorXd rsl[4];
-    Eigen::HouseholderQR<Eigen::MatrixXd> decompl[4];
+    Eigen::MatrixXd Jl[QUADRANTS_NUM]; //по одной дл€ каждого подшаблона
+    Eigen::VectorXd rsl[QUADRANTS_NUM];
+    Eigen::HouseholderQR<Eigen::MatrixXd> decompl[QUADRANTS_NUM];
 
 public:
     TreeNode() {}; //default constructor
@@ -97,6 +97,8 @@ public:
     int refine(); //дробление €чейки
     void gatherDataFromChildren(); //сбор данных из детей дл€ объединени€
     int coarsen(); //склейка €чейки
+    void updateEigenObjects(); //создание или обновление Eigen матриц и т.д. после изменени€ сетки
+    void calcPolynomialCWENO(rkStep rk); //вычисление коэффициентов 2D CWENO полинома
 
     //inspectors
     bool isDeleted() const;
@@ -107,6 +109,8 @@ public:
     bool hasNeighbour(Neighbour n) const; //есть ли сосед по направлению
     bool hasNeighbour12(Neighbour12 n12) const;
     bool hasEdge(Edge etype) const; //есть ли ребро
+    int neighbours12Num() const; //число соседей12
+    bool isNodeInSubstencil(Quadrant q, const TreeNode& rnnode) const; //попадает ли €чейка в подшаблон дл€ линейной функции
 
     //other
     static TreeNode& nodeRef(const NodeTag& tag); //ссылка на ноду по тэгу (static - обща€ функци€ дл€ всех нод)
@@ -123,13 +127,9 @@ public:
 
     /*
     NodeTag getNodeOrChildTag(int target_depth, Quadrant quadrant) const; //поиск граничной ноды нужного уровн€ внутри данной (глубина поиска не более 1)
-    int neighbours12Num() const; //число соседей
     //bool isBoundary(); //€вл€етс€ ли граничной
     //bool isCorner(); //€вл€етс€ ли угловой
     TreeNode& getNeigbourOrSelf(Neighbour dir, int target_depth) const; //ссылка на соседа (или на себ€, если нет соседа)
-    bool isNeighbour12InSubstencil(Neighbour12 n, Quadrant q) const; //попадает ли сосед в подшаблон дл€ линейной функции
-    void updateEigenObjects(); //создание или обновление Eigen матриц и т.д. после изменени€ сетки
-    void calcPolynomialCWENO(rkStep rk); //вычисление коэффициентов 2D CWENO полинома
     CellData evalPolynomialAt(point p, rkStep rk = 0); //реконструированное полиномом значение 
     */
 };

@@ -37,6 +37,7 @@ class CellData
     double y = 1.0; //для осесимметричных координат, в декартовых задается равным 1.0
 
 public:
+    ConservativeVector& Qref(rkStep rk = 0); //ссылка на вектор переменных
     //вычисления по консервативным величинам
     double rho(rkStep rk = 0) const;
     double u(rkStep rk = 0) const;

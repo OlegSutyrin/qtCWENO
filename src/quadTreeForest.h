@@ -41,6 +41,7 @@ public:
     void meshCoarsenInitial(); //начальное склеивание сетки (для теста)
     void meshUpdate(); //обновление сетки
     void computeQuadraturePoints(); //расчет точек квадратуры во всех ребрах
+    void updateEigenObjects(); //создание или обновление Eigen объектов для всех ячеек
     void initialCondition(); //начальные условия
 
     //output
