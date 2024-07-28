@@ -213,7 +213,8 @@ int main(int argc, char** argv)
 
         forest.advanceTime(); //шаг по времени
         forest.putQn(config.rk_order); //переброс Qn[rk_order] --> Qn[0] после последнего шага Рунге-Кутты
-        forest.boundaryConditions(0);
+        //forest.boundaryConditions(0);
+        forest.boundaryConditionsAll();
 
         bool to_export = checkExportTime(); //нужно ли будет выводить после этого шага
         globals.time += globals.dt;
@@ -229,7 +230,7 @@ int main(int argc, char** argv)
         cout << endl;
         globals.file_output << endl;
 
-        if (true || to_export)
+        if (to_export)
             ExportForest();
     } //конец цикла по времени
 
@@ -237,5 +238,6 @@ int main(int argc, char** argv)
     auto chrono_duration = std::chrono::steady_clock::now() - chrono_start;
     int duration_seconds = (int)round(std::chrono::duration<double, std::milli>(chrono_duration).count() / 1000);
     cout << "Job's done in " << std::to_string(duration_seconds) << " seconds." << endl;
+    globals.file_output << "Job's done in " << std::to_string(duration_seconds) << " seconds." << endl;
     return 0;
 }

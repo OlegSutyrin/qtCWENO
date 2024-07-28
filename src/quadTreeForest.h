@@ -49,6 +49,7 @@ public:
     void computeFluxesCWENO(rkStep rk); //расчет потоков на всех ребрах
     void advanceTime(); //полный шаг по времени: вычисление Qn[rk_order]
     void boundaryConditions(rkStep rk); //граничные условия
+    void boundaryConditionsAll(); //граничные условия для всех rk
 
     //output
     void exportScatter(std::string filename); //вывод в файл (Tecplot ASCII scatter)

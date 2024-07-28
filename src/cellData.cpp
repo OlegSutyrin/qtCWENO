@@ -92,6 +92,7 @@ double ConservativeVector::G(Equation eq, double y) const
 
 void ConservativeVector::clear() { Q.fill(0); } //обнуление вектора
 void ConservativeVector::set(Equation eq, double value) { Q[static_cast<int>(eq)] = value; } //задание компоненты
+void ConservativeVector::add(Equation eq, double value) { Q[static_cast<int>(eq)] += value; } //добавление к компоненте
 void ConservativeVector::flipVelocity(Orientation ori) //изменение знака компоненты скорости
 {
     if (ori == Orientation::horizontal) //меняется горизонтальная компонента

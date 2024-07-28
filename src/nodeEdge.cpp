@@ -9,7 +9,7 @@
 
 const NodeTag NodeEdge::n1() const { return n1_; }
 const NodeTag NodeEdge::n2() const { return n2_; }
-
+const Orientation NodeEdge::ori() const { return orientation_; }
 
 //accessors
 double NodeEdge::FQ(Equation eq) const { return FQ_[static_cast<int>(eq)]; } //компонента потока
@@ -50,8 +50,14 @@ void NodeEdge::computeFluxLF(rkStep rk) //расчет потока (Lax-Friedrich flux)
     auto& rn1 = TreeNode::nodeRef(n1_);
     auto& rn2 = TreeNode::nodeRef(n2_);
     double h = length(); //длина ребра
-    double y1 = rn1.box().center().y;
-    double y2 = rn2.box().center().y;
+    
+    //TODO: продумать, как лучше работать с r в цилиндрических координатах
+    double y1 = 1.0, y2 = 1.0;
+    if (config.coord_type == CoordType::axisymmetric)
+    {
+        double y1 = rn1.box().center().y;
+        double y2 = rn2.box().center().y;
+    }
     //реконструированные данные соседей в точках квадратуры, [точка][сосед]
     ConservativeVector Qs[2][2] = { {rn1.evalPolynomialAt(qps[0], rk), rn2.evalPolynomialAt(qps[0], rk)},
         {rn1.evalPolynomialAt(qps[1], rk), rn2.evalPolynomialAt(qps[1], rk)} };

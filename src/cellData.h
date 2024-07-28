@@ -22,6 +22,7 @@ struct ConservativeVector
 
     void clear(); //обнуление вектора
     void set(Equation eq, double value); //задание компоненты
+    void add(Equation eq, double value); //добавление к компоненте
     void flipVelocity(Orientation ori); //изменение знака компоненты скорости
 
     const double operator()(Equation eq) const; //() operator: компонента по уравнению

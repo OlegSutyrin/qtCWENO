@@ -620,9 +620,13 @@ void QuadTreeForest::putQn(rkStep rk) //переброс Qn[rk_order] -> Qn[0]
 
 void QuadTreeForest::computePolynomialCoeffs(rkStep rk) //вычисление коэффициентов CWENO полинома во всех €чейках
 {
-    for (auto& rtree : trees)
+    int trees_total = static_cast<int>(trees.size());
+#pragma omp parallel for schedule(dynamic)
+    //for (auto& rtree : trees)
+    for (int id = 0; id < trees_total; id++)
     {
-        for (auto& rlevel : rtree.nodes)
+        //for (auto& rlevel : rtree.nodes)
+        for (auto& rlevel : trees[id].nodes)
         {
             for (auto& rnode : rlevel)
             {
@@ -637,12 +641,12 @@ void QuadTreeForest::computePolynomialCoeffs(rkStep rk) //вычисление коэффициент
 
 void QuadTreeForest::computeFluxesCWENO(rkStep rk) //расчет потоков на всех ребрах
 {
-    //int edges_total = forest.edges.size();
-    //#pragma omp parallel for TODO: разбратьс€, почему приводит шагу t -> inf
-    for (auto& redge : edges)
-        //for (int id = 0; id < edges_total; id++)
+    int edges_total = forest.edges.size();
+#pragma omp parallel for schedule(dynamic)
+    //for (auto& redge : edges)
+    for (int id = 0; id < edges_total; id++)
     {
-        //auto& edge = forest.edges[id];
+        auto& redge = forest.edges[id];
         if (redge.isDeleted() || (treeRef(redge.n1().tree()).isGhost() && treeRef(redge.n2().tree()).isGhost())) //удаленные ребра и ребра между ghost'ами пропускаютс€
             continue;
         if (config.flux == FluxType::LF)
@@ -676,48 +680,53 @@ void QuadTreeForest::advanceTime() //полный шаг по времени: вычисление Qn[rk_ord
                         auto& rd = rnode.dataRef();
                         double h = rnode.box().size();
                         double area = h * h; //площадь €чейки (объем, деленный на dz)
+                        double y = 1.0; //заплатка
                         if (config.coord_type == CoordType::axisymmetric) //в осесимметричных координатах домножаетс€ на r (V = r dr dz dtheta)
+                        {
+                            y = rnode.box().center().y;
                             area *= rnode.box().center().y;
+                        }
                         ConservativeVector Q{};
+                        Q.clear(); //обнуление компонент (можно заменить €вным дефолтным конструктором)
                         for (auto eq : Equations)
                         {
                             for (rkStep r = 0; r <= rk; r++) //слагаемые по Qn
-                                Q.set(eq, Q(eq) + RKcoeff[config.rk_order - 1][rk][r] * rd.Qref(r)(eq));
+                                Q.add(eq, RKcoeff[config.rk_order - 1][rk][r] * rd.Qref(r)(eq));
 
                             //FV-метод: сумма интегралов потоков по всем ребрам
-                            /*for (ushorty etype = 0; etype < DIRECTIONS_NUM * 2; etype++)
+                            for (auto etype : Edges)
                             {
                                 double sgn; //знак потока: снизу и слева "+", сверху и справа "-"
-                                if (etype < DIRECTIONS_NUM)
+                                if (static_cast<int>(etype) < DIRECTIONS_NUM)
                                     sgn = -1.0;
                                 else
                                     sgn = 1.0;
-                                if (cnode.hasEdge(etype))
+                                if (rnode.hasEdge(etype))
                                 {
-                                    auto& cedge = cnode.getEdge(etype);
-                                    double dflux = RKcoeff[config.rk_order - 1][rk][RK_ORDER_MAX] * globals.dt / area * sgn * cedge.FQ[eq];
-                                    if (config.coord_type == COORD_TYPE_AXISYMMETRIC) //осесимметричные координаты
+                                    auto& redge = rnode.edgeRef(etype);
+                                    double dflux = RKcoeff[config.rk_order - 1][rk][RK_ORDER_MAX] * globals.dt / area * sgn * redge.FQ(eq);
+                                    if (config.coord_type == CoordType::axisymmetric) //осесимметричные координаты
                                     {
-                                        if (cedge.orientation == ORIENTATION_VERTICAL) //вдоль оси x 
+                                        if (redge.ori() == Orientation::vertical) //вдоль оси x 
                                         {
-                                            d.Qn[rk + 1][eq] += dflux * d.y;
+                                            Q.add(eq, dflux * y);
                                         }
                                         else //вдоль оси y
                                         {
-                                            if (etype == 0 || etype == 1) //верхнее ребро: площадь грани контрольного объема больше
-                                                d.Qn[rk + 1][eq] += dflux * (d.y + h / 2.0);
+                                            if (etype == Edge::top1 || etype == Edge::top2) //верхнее ребро: площадь грани контрольного объема больше
+                                                Q.add(eq, dflux * (y + h / 2.0));
                                             else //нижнее ребро: площадь грани меньше
-                                                d.Qn[rk + 1][eq] += dflux * (d.y - h / 2.0);
+                                                Q.add(eq, dflux * (y - h / 2.0));
                                         }
                                     }
                                     else
-                                        d.Qn[rk + 1][eq] += dflux;
+                                        Q.add(eq, dflux);
                                 }
                             }
-                            if (config.coord_type == COORD_TYPE_AXISYMMETRIC && eq == EQ_MOMENTUM_Y) //источниковый член
+                            if (config.coord_type == CoordType::axisymmetric && eq == Equation::momentum_y) //источниковый член
                             {
-                                d.Qn[rk + 1][eq] += RKcoeff[config.rk_order - 1][rk][RK_ORDER_MAX] * d.p(rk);
-                            }*/
+                                Q.add(eq, RKcoeff[config.rk_order - 1][rk][RK_ORDER_MAX] * rd.p(rk));
+                            }
                         }
                         rd.setQ(Q, rk + 1); //запись rd.Qn[rk + 1]
                     }
@@ -725,7 +734,10 @@ void QuadTreeForest::advanceTime() //полный шаг по времени: вычисление Qn[rk_ord
             }
         }
         if (rk + 1 < config.rk_order) //все шаги, кроме последнего (дл€ него вызываетс€ в main)
-            boundaryConditions(rk + 1);
+        {
+            //boundaryConditions(rk + 1);
+            boundaryConditionsAll();
+        }
     }
     return;
 }
@@ -812,6 +824,100 @@ void QuadTreeForest::boundaryConditions(rkStep rk) //граничные услови€
                                 break;
                             }
                             rnode.dataRef().setQ(Q, rk); //запись вектора данных
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void QuadTreeForest::boundaryConditionsAll() //граничные услови€ дл€ всех rk
+{
+    for (auto& rtree : trees)
+    {
+        if (!rtree.isGhost()) //живые деревь€ пропускаютс€
+            continue;
+        
+        for (rkStep rk = 0; rk <= config.rk_order; rk++)
+        {
+            if (rtree.isGhostCorner()) //угловые деревь€
+            {
+                TreeNode& rroot = rtree.rootRef(); //предполагаетс€ наличие только корневой €чейки
+                if (rroot.hasNeighbour12(Neighbour12::top_right)) //эта €чейка - нижн€€ лева€
+                {
+                    ConservativeVector Q = TreeNode::nodeRef(rroot.neighbour12(Neighbour12::top_right)).dataRef().Qref(rk); //по значению
+                    if (config.boundary_conditions[static_cast<int>(Directions::down)] == BCType::wall)
+                        Q.flipVelocity(Orientation::vertical);
+                    if (config.boundary_conditions[static_cast<int>(Directions::left)] == BCType::wall)
+                        Q.flipVelocity(Orientation::horizontal);
+                    rroot.dataRef().setQ(Q, rk);
+                    continue;
+                }
+                if (rroot.hasNeighbour12(Neighbour12::bottom_right))
+                {
+                    ConservativeVector Q = TreeNode::nodeRef(rroot.neighbour12(Neighbour12::bottom_right)).dataRef().Qref(rk);
+                    if (config.boundary_conditions[static_cast<int>(Directions::left)] == BCType::wall)
+                        Q.flipVelocity(Orientation::horizontal);
+                    if (config.boundary_conditions[static_cast<int>(Directions::up)] == BCType::wall)
+                        Q.flipVelocity(Orientation::vertical);
+                    rroot.dataRef().setQ(Q, rk);
+                    continue;
+                }
+                if (rroot.hasNeighbour12(Neighbour12::bottom_left))
+                {
+                    ConservativeVector Q = TreeNode::nodeRef(rroot.neighbour12(Neighbour12::bottom_left)).dataRef().Qref(rk);
+                    if (config.boundary_conditions[static_cast<int>(Directions::up)] == BCType::wall)
+                        Q.flipVelocity(Orientation::vertical);
+                    if (config.boundary_conditions[static_cast<int>(Directions::right)] == BCType::wall)
+                        Q.flipVelocity(Orientation::horizontal);
+                    rroot.dataRef().setQ(Q, rk);
+                    continue;
+                }
+                if (rroot.hasNeighbour12(Neighbour12::top_left))
+                {
+                    ConservativeVector Q = TreeNode::nodeRef(rroot.neighbour12(Neighbour12::top_left)).dataRef().Qref(rk);
+                    if (config.boundary_conditions[static_cast<int>(Directions::right)] == BCType::wall)
+                        Q.flipVelocity(Orientation::horizontal);
+                    if (config.boundary_conditions[static_cast<int>(Directions::down)] == BCType::wall)
+                        Q.flipVelocity(Orientation::vertical);
+                    rroot.dataRef().setQ(Q, rk);
+                    continue;
+                }
+            }
+            //остальные, неугловые деревь€
+            for (auto& rlevel : rtree.nodes)
+            {
+                for (auto& rnode : rlevel)
+                {
+                    if (!rnode.isDeleted() && !rnode.hasChildren())
+                    {
+                        for (auto n : Neighbours)
+                        {
+                            if (rnode.hasNeighbour(n) && !forest.treeRef(rnode.neighbour(n).tree()).isGhost()) //есть живой сосед
+                            {
+                                ConservativeVector Q = TreeNode::nodeRef(rnode.neighbour(n)).dataRef().Qref(rk); //по значению
+                                switch (n)
+                                {
+                                case Neighbour::top:
+                                    if (config.coord_type == CoordType::cartesian && config.boundary_conditions[static_cast<int>(Directions::down)] == BCType::wall) //живой сосед сверху = нижн€€ граница расчетной сетки
+                                        Q.flipVelocity(Orientation::vertical);
+                                    break;
+                                case Neighbour::right:
+                                    if (config.boundary_conditions[static_cast<int>(Directions::left)] == BCType::wall) //лева€ граница
+                                        Q.flipVelocity(Orientation::horizontal);
+                                    break;
+                                case Neighbour::bottom:
+                                    if (config.boundary_conditions[static_cast<int>(Directions::up)] == BCType::wall) //верхн€€ граница
+                                        Q.flipVelocity(Orientation::vertical);
+                                    break;
+                                case Neighbour::left:
+                                    if (config.boundary_conditions[static_cast<int>(Directions::right)] == BCType::wall) //права€ граница
+                                        Q.flipVelocity(Orientation::horizontal);
+                                    break;
+                                }
+                                rnode.dataRef().setQ(Q, rk); //запись вектора данных
+                            }
                         }
                     }
                 }

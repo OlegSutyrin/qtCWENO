@@ -19,6 +19,7 @@ public:
     //accessors
     const NodeTag n1() const;
     const NodeTag n2() const;
+    const Orientation ori() const;
     double FQ(Equation eq) const; //компонента потока
     Point middle(); //центр ребра
     double length() const; //вычисление длины ребра по точкам квадратуры TODO: хранить вершины и длину в самом ребре

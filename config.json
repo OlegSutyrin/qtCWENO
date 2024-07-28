@@ -1,7 +1,7 @@
 {
   "box": { //глобальная область расчета
-    "x min": -1.0,
-    "x max": 1.0,
+    "x min": -0.8,
+    "x max": 1.2,
     "y min": 0.0,
     "y max": 1.0
   },
@@ -31,16 +31,16 @@
   "Mach": 3.0, //3.0, //число Маха исходной УВ
   "Atwood": 0.5, //число Атвуда для неоднородности плотности
 
-  "finish time": 0.5, //конечное физическое время расчета
+  "finish time": 0.6, //конечное физическое время расчета
   "export": { //параметры вывода в файл
     "period": 0.05, //период вывода в файл, физическое время
-    "scatter": true, //scatter (ASCII)
-    "neighbours": true, //соседи (ASCII)
-    "neighbours12": true, //соседи с учетом диагональных и разделения ребер (ASCII)
-    "edges": true, //ребра (ASCII)
-    "node edges": true, //ребра ячеек (ASCII)
+    "scatter": false, //scatter (ASCII)
+    "neighbours": false, //соседи (ASCII)
+    "neighbours12": false, //соседи с учетом диагональных и разделения ребер (ASCII)
+    "edges": false, //ребра (ASCII)
+    "node edges": false, //ребра ячеек (ASCII)
     "fluxes": false, //потоки (ASCII)
-    "plt": false //бинарные .plt
+    "plt": true //бинарные .plt
   },
   "trees": {
     "Nx": 10,
