@@ -116,8 +116,8 @@ public:
     //other
     static TreeNode& nodeRef(const NodeTag& tag); //ссылка на ноду по тэгу (static - общая функция для всех нод)
     double magGradRho() const; //примерный градиент плотности
-    ConservativeVector evalPolynomialAt(Point p, rkStep rk); //реконструированное полиномом CWENO значение TODO: сделать const
-
+    ConservativeVector evalPolynomialAt(Point p, rkStep rk = 0); //реконструированное полиномом CWENO значение TODO: сделать const
+    
     //output
     std::string dump() const; //дамп ноды в строку
     std::string dumpNeighbourVector(Neighbour n) const; //дамп соседа в виде вектора

@@ -55,8 +55,8 @@ void NodeEdge::computeFluxLF(rkStep rk) //расчет потока (Lax-Friedrich flux)
     double y1 = 1.0, y2 = 1.0;
     if (config.coord_type == CoordType::axisymmetric)
     {
-        double y1 = rn1.box().center().y;
-        double y2 = rn2.box().center().y;
+        y1 = rn1.box().center().y;
+        y2 = rn2.box().center().y;
     }
     //реконструированные данные соседей в точках квадратуры, [точка][сосед]
     ConservativeVector Qs[2][2] = { {rn1.evalPolynomialAt(qps[0], rk), rn2.evalPolynomialAt(qps[0], rk)},

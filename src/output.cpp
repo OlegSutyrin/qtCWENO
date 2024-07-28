@@ -231,11 +231,14 @@ static void writeTecplotZoneDataFloat(FILE* fp)
             for (int l = 0; l <= Lmax; l++)
             {
                 Point p{ extrema.minima[0] + k * h + 0.5 * h, extrema.minima[1] + l * h + 0.5 * h };
-                auto& ctree = forest.getTreeByCoords(p);
-                auto& cnode = ctree.getNodeByCoords(p);
+                auto& rtree = forest.getTreeByCoords(p);
+                auto& rnode = rtree.getNodeByCoords(p);
                 //auto& dcenter = cnode.dataRef();
-                //auto d = cnode.evalPolynomialAt(p);
-                auto& d = cnode.dataRef();
+                ConservativeVector Q = rnode.evalPolynomialAt(p);
+                double y = 1.0;
+                if (config.coord_type == CoordType::axisymmetric)
+                    y = rnode.box().center().y;
+                //auto& d = cnode.dataRef();
                 switch (field)
                 {
                 case 0:
@@ -245,25 +248,25 @@ static void writeTecplotZoneDataFloat(FILE* fp)
                     writeBinary4BytesFloat((float)NaNcleared(p.y), fp);
                     break;
                 case 2:
-                    writeBinary4BytesFloat((float)NaNcleared(d.rho()), fp);
+                    writeBinary4BytesFloat((float)NaNcleared(Q.rho(y)), fp);
                     break;
                 case 3:
-                    writeBinary4BytesFloat((float)NaNcleared(d.u()), fp);
+                    writeBinary4BytesFloat((float)NaNcleared(Q.u(y)), fp);
                     break;
                 case 4:
-                    writeBinary4BytesFloat((float)NaNcleared(d.v()), fp);
+                    writeBinary4BytesFloat((float)NaNcleared(Q.v(y)), fp);
                     break;
                 case 5:
-                    writeBinary4BytesFloat((float)NaNcleared(d.p()), fp);
+                    writeBinary4BytesFloat((float)NaNcleared(Q.p(y)), fp);
                     break;
                 case 6:
-                    writeBinary4BytesFloat((float)NaNcleared(d.Mach()), fp);
+                    writeBinary4BytesFloat((float)NaNcleared(Q.Mach(y)), fp);
                     break;
                 case 7:
-                    writeBinary4BytesFloat((float)cnode.tag().depth(), fp);
+                    writeBinary4BytesFloat((float)rnode.tag().depth(), fp);
                     break;
                 case 8:
-                    writeBinary4BytesFloat((float)NaNcleared(cnode.magGradRho()), fp);
+                    writeBinary4BytesFloat((float)NaNcleared(rnode.magGradRho()), fp);
                     break;
                 }
             }

@@ -620,7 +620,7 @@ void QuadTreeForest::putQn(rkStep rk) //переброс Qn[rk_order] -> Qn[0]
 
 void QuadTreeForest::computePolynomialCoeffs(rkStep rk) //вычисление коэффициентов CWENO полинома во всех ячейках
 {
-    int trees_total = static_cast<int>(trees.size());
+    size_t trees_total = static_cast<int>(trees.size());
 #pragma omp parallel for schedule(dynamic)
     //for (auto& rtree : trees)
     for (int id = 0; id < trees_total; id++)
@@ -641,7 +641,7 @@ void QuadTreeForest::computePolynomialCoeffs(rkStep rk) //вычисление коэффициент
 
 void QuadTreeForest::computeFluxesCWENO(rkStep rk) //расчет потоков на всех ребрах
 {
-    int edges_total = forest.edges.size();
+    size_t edges_total = forest.edges.size();
 #pragma omp parallel for schedule(dynamic)
     //for (auto& redge : edges)
     for (int id = 0; id < edges_total; id++)
