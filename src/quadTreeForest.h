@@ -58,9 +58,6 @@ public:
     void exportEdges(std::string filename); //вывод ребер в файл (Tecplot ASCII scatter and vectors)
     void exportNodeEdges(std::string filename); //вывод ребер €чеек в файл (Tecplot ASCII vectors)
 
-    friend class QuadTree;
-    friend class TreeNode;
-
     //шаблон цикла по деревь€м
     /*template<typename Func>
     inline void forAllTrees(Func f, bool include_ghosts = SKIP_GHOSTS)

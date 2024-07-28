@@ -31,6 +31,8 @@ public:
     CellData& dataRef(cellDataId id); //ссылка на CellData по id
     CellData data(cellDataId id) const; //копия CellData по id
     TreeNode& getNodeByCoords(Point p) const; //ссылка на ноду по координатам
+    size_t activeNodes(int depth = 0) const; //число активных нод (в [0] хранится общее число по всем уровням)
+    size_t leafNodes(int depth = 0) const; //число листьев
 
     //mutators
     void initNewLevel(); //инициализация нового уровня дерева (cross-check with coarsenTreeNode)
@@ -43,7 +45,6 @@ public:
     //inspectors
     bool isGhost() const; //является ли дерево ghost'ом
     bool isGhostCorner() const; //является ли дерево угловым ghost'ом
-    //static bool isTreeGhost(quadTreeId id); //является ли дерево ghost'ом (по id)
 
     //other
     CellBox generateBox(const CellBox& global_box) const; //вычисление bounding box для дерева по параметрам начальной сетки и индексу дерева
@@ -56,8 +57,7 @@ public:
     //output
     const std::string dump() const; //дамп дерева в строку
 
-    friend class QuadTreeForest;
-    friend class TreeNode;
+    friend class QuadTreeForest; //для циклов в forest'е TODO: заменить функциями доступа
 
     //шаблон цикла по нодам
     /*template<typename Func>

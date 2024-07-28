@@ -141,6 +141,9 @@ TreeNode& QuadTree::getNodeByCoords(Point p) const //ссылка на ноду по координат
     return tree.nodes[FIRST_LEVEL][FIRST_ID].getChildOrSelfByCoords(p);
 }
 
+size_t QuadTree::activeNodes(int depth) const { return active_nodes_num[depth]; } //число активных нод
+size_t QuadTree::leafNodes(int depth) const { return leaf_nodes_num[depth]; } //число листьев
+
 //mutators -----------------------
 void QuadTree::initNewLevel() //инициализация нового уровня дерева
 {

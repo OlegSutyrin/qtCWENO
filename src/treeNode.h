@@ -123,17 +123,6 @@ public:
     std::string dumpNeighbourVector(Neighbour n) const; //дамп соседа в виде вектора
     std::string dumpNeighbour12Vector(Neighbour12 n12) const; //дамп соседа12 в виде вектора
     std::string dumpEdgeVector(Edge etype) const; //дамп ребра €чейки в виде вектора
-
-    friend class QuadTreeForest; //дл€ глобальных функций TODO:разобратьс€, как лучше реализовать вложенные циклы без нарушени€ инкапсул€ции
-    friend class QuadTree;
-
-    /*
-    NodeTag getNodeOrChildTag(int target_depth, Quadrant quadrant) const; //поиск граничной ноды нужного уровн€ внутри данной (глубина поиска не более 1)
-    //bool isBoundary(); //€вл€етс€ ли граничной
-    //bool isCorner(); //€вл€етс€ ли угловой
-    TreeNode& getNeigbourOrSelf(Neighbour dir, int target_depth) const; //ссылка на соседа (или на себ€, если нет соседа)
-    CellData evalPolynomialAt(point p, rkStep rk = 0); //реконструированное полиномом значение 
-    */
 };
 
 //struct ссылки на детей

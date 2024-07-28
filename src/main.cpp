@@ -213,7 +213,7 @@ int main(int argc, char** argv)
 
         forest.advanceTime(); //шаг по времени
         forest.putQn(config.rk_order); //переброс Qn[rk_order] --> Qn[0] после последнего шага –унге- утты
-        //forest.boundaryConditions(0);
+        //forest.boundaryConditions(0); TODO: разобратьс€, почему генерирует мусор на границах
         forest.boundaryConditionsAll();
 
         bool to_export = checkExportTime(); //нужно ли будет выводить после этого шага

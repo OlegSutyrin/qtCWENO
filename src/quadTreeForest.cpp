@@ -161,7 +161,7 @@ size_t QuadTreeForest::activeNodesNumber() const //подсчет активных (неудаленных
     for (auto& rtree : forest.trees)
     {
         if (!rtree.isGhost())
-            ret += rtree.active_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
+            ret += rtree.activeNodes();
     }
     return ret;
 }
@@ -171,7 +171,7 @@ size_t QuadTreeForest::leavesNumber() const //подсчет листьев
     for (auto& rtree : forest.trees)
     {
         if (!rtree.isGhost())
-            ret += rtree.leaf_nodes_num[0]; //в [0] хранится суммарное число по всем уровням
+            ret += rtree.leafNodes();
     }
     return ret;
 }
@@ -202,9 +202,9 @@ dataExtrema QuadTreeForest::getExtrema() //сбор экстремумов всех величин для выв
     {
         if (tree.isGhost()) //пропуск ghost-деревьев
             continue;
-        for (auto& nodes_level : tree.nodes)
+        for (auto& rlevel : tree.nodes)
         {
-            for (auto& cnode : nodes_level)
+            for (auto& cnode : rlevel)
             {
                 if (!cnode.isDeleted() && cnode.isLeaf())
                 {
@@ -720,7 +720,9 @@ void QuadTreeForest::advanceTime() //полный шаг по времени: вычисление Qn[rk_ord
                                         }
                                     }
                                     else
+                                    {
                                         Q.add(eq, dflux);
+                                    }
                                 }
                             }
                             if (config.coord_type == CoordType::axisymmetric && eq == Equation::momentum_y) //источниковый член
@@ -728,14 +730,14 @@ void QuadTreeForest::advanceTime() //полный шаг по времени: вычисление Qn[rk_ord
                                 Q.add(eq, RKcoeff[config.rk_order - 1][rk][RK_ORDER_MAX] * rd.p(rk));
                             }
                         }
-                        rd.setQ(Q, rk + 1); //запись rd.Qn[rk + 1]
+                        rd.setQ(Q, rk + 1); //запись Qn[rk + 1]
                     }
                 }
             }
         }
         if (rk + 1 < config.rk_order) //все шаги, кроме последнего (для него вызывается в main)
         {
-            //boundaryConditions(rk + 1);
+            //boundaryConditions(rk + 1); TODO: разобраться, почему генерирует мусор на границах
             boundaryConditionsAll();
         }
     }
