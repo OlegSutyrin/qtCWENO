@@ -76,7 +76,8 @@ QuadTree::QuadTree(quadTreeId _id) //конструктор дерева с одной нодой
 //accessors -----------------------
 treeNodeId QuadTree::id() const { return id_; }
 int QuadTree::depth() const { return depth_; }
-const TreeNode& QuadTree::root() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизмен€юему) корневую ноду
+TreeNode& QuadTree::rootRef() { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на корневую ноду
+const TreeNode& QuadTree::rootRefConst() const { return nodes[FIRST_LEVEL][FIRST_ID]; } //ссылка на (неизмен€юему) корневую ноду
 
 TreeNode& QuadTree::nodeRef(int d, treeNodeId id)
 {
@@ -185,6 +186,17 @@ void QuadTree::incrementCounterLeaves(int dpth, int amount) //изменение счетчика
 
 //inspectors -----------------------
 bool QuadTree::isGhost() const { return is_ghost; }
+bool QuadTree::isGhostCorner() const
+{
+    //подсчет отсутствующих соседей (предполагаетс€, что в этом дереве только одна нода)
+    int ghostness = 0;
+    for (auto n : Neighbours)
+    {
+        if (!rootRefConst().hasNeighbour(n))
+            ghostness++;
+    }
+    return ghostness >= 2;
+}
 
 //other -----------------------
 CellBox QuadTree::generateBox(const CellBox& global_box) const //вычисление bounding box дл€ дерева по параметрам начальной сетки и индексу дерева

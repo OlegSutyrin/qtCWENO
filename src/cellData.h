@@ -22,8 +22,10 @@ struct ConservativeVector
 
     void clear(); //обнуление вектора
     void set(Equation eq, double value); //задание компоненты
+    void flipVelocity(Orientation ori); //изменение знака компоненты скорости
 
     const double operator()(Equation eq) const; //() operator: компонента по уравнению
+    ConservativeVector& operator=(const ConservativeVector& rhs); //= overload
     ConservativeVector& operator+=(const ConservativeVector& rhs); //+= overload
     ConservativeVector& operator/=(const double rhs); ///= overload
     friend std::ostream& operator<<(std::ostream& os, const ConservativeVector& rhs); //output overload
@@ -53,11 +55,12 @@ public:
 
     void clear(); //обнуление данных
     void set(const CellData& d); //запись данных
-    void setQ0(const ConservativeVector Q); //запись вектора консервативный переменных только для rk=0
+    void setQ(const ConservativeVector Q, rkStep rk = 0); //запись вектора консервативных переменных в один [rk]
     void setY(double _y); //задание y
     void add(const CellData& d); //добавление к текущим консервативным величинам
     void divide(double divisor); //деление консервативных величин
     //void flipVelocity(Neighbour n); //изменение знака компоненты скорости
+    void putQn(rkStep rk); //переброс Qn[rk_order] -> Qn[0]
     std::string dumpQn() const; //дамп всех Qn
 
     friend std::ostream& operator<<(std::ostream& os, const CellData& d); //output overload

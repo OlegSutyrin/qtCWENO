@@ -1,5 +1,5 @@
 #!MC 1410
-$!VarSet |LFDSFN1| = '"output_000.dat"'
+$!VarSet |LFDSFN1| = '"output_001.dat"'
 $!VarSet |LFDSVL1| = '"X" "Y" "Level" "Size" "rho" "u" "v" "p" "tree" "magGradRho"'
 $!SetStyleBase Factory
 $!CreateColorMap 
@@ -242,7 +242,7 @@ $!ThreeDAxis
 $!PlotType  = Cartesian2D
 $!FrameName  = 'Frame 001'
 $!GlobalTime 
-  SolutionTime = 0
+  SolutionTime = 0.000684000000000000038
 $!ActiveFieldMaps  =  [1]
 $!GlobalRGB 
   RangeMin = 0
@@ -290,8 +290,8 @@ $!GlobalContour  1
     }
   ColorCutoff
     {
-    RangeMin = 1.714285
-    RangeMax = 3.142855
+    RangeMin = 0.964285
+    RangeMax = 2.892855
     }
   ColorMapFilter
     {
@@ -305,7 +305,9 @@ $!GlobalContour  1
 $!ContourLevels New
   ContourGroup = 1
   RawData
-5
+7
+0.5
+1
 1.5
 2
 2.5
@@ -567,9 +569,9 @@ $!TwoDAxis
     }
 $!IsoSurfaceAttributes  1
   IsoSurfaceSelection = OneSpecificValue
-  Isovalue1 = 1.714285
-  Isovalue2 = 2.42857
-  Isovalue3 = 3.142855
+  Isovalue1 = 0.964285
+  Isovalue2 = 1.92857
+  Isovalue3 = 2.892855
   Effects
     {
     LightingEffect = Gouraud

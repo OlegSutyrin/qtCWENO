@@ -92,8 +92,22 @@ double ConservativeVector::G(Equation eq, double y) const
 
 void ConservativeVector::clear() { Q.fill(0); } //обнуление вектора
 void ConservativeVector::set(Equation eq, double value) { Q[static_cast<int>(eq)] = value; } //задание компоненты
+void ConservativeVector::flipVelocity(Orientation ori) //изменение знака компоненты скорости
+{
+    if (ori == Orientation::horizontal) //меняется горизонтальная компонента
+        Q[static_cast<int>(Equation::momentum_x)] *= -1;
+    else
+        Q[static_cast<int>(Equation::momentum_y)] *= -1;
+}
 
 const double ConservativeVector::operator()(Equation eq) const { return Q[static_cast<int>(eq)]; } //компонента по уравнению
+ConservativeVector& ConservativeVector::operator=(const ConservativeVector& rhs) //= overload
+{
+    if (this == &rhs)
+        return *this;
+    Q = rhs.Q; //std::array assignment
+    return *this;
+}
 ConservativeVector& ConservativeVector::operator+=(const ConservativeVector& rhs) //+= overload
 {
     for(auto eq : Equations)
@@ -139,10 +153,10 @@ void CellData::clear() //обнуление данных
 void CellData::set(const CellData& d) //запись данных
 {
     for (rkStep rk = 0; rk < RK_ORDER_MAX; rk++)
-        Qn[rk] = d.Qn[rk]; //приравнивание значений std::array
+        Qn[rk] = d.Qn[rk]; //std::array assignment
     y = d.y;
 }
-void CellData::setQ0(const ConservativeVector Q) { Qn[0] = Q; } //запись вектора консервативный переменных только для rk=0
+void CellData::setQ(const ConservativeVector Q, rkStep rk) { Qn[rk] = Q; } //запись вектора консервативных переменных в один [rk]
 void CellData::setY(double _y) { y = _y; } //задание y
 
 void CellData::add(const CellData& d) //добавление к текущим консервативным величинам
@@ -169,6 +183,8 @@ void CellData::divide(double divisor) //деление консервативных величин
             Qn[rk][Equation::momentum_y] *= -1;
     }
 }*/
+
+void CellData::putQn(rkStep rk) { Qn[0] = Qn[static_cast<int>(rk)]; } //переброс Qn[rk_order] -> Qn[0]
 
 std::string CellData::dumpQn() const //дамп всех Qn
 {

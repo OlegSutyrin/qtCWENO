@@ -45,6 +45,45 @@ void NodeEdge::computeQuadraturePoints() //расчет точек квадратуры на ребре
     }
 }
 
+void NodeEdge::computeFluxLF(rkStep rk) //расчет потока (Lax-Friedrich flux)
+{
+    auto& rn1 = TreeNode::nodeRef(n1_);
+    auto& rn2 = TreeNode::nodeRef(n2_);
+    double h = length(); //длина ребра
+    double y1 = rn1.box().center().y;
+    double y2 = rn2.box().center().y;
+    //реконструированные данные соседей в точках квадратуры, [точка][сосед]
+    ConservativeVector Qs[2][2] = { {rn1.evalPolynomialAt(qps[0], rk), rn2.evalPolynomialAt(qps[0], rk)},
+        {rn1.evalPolynomialAt(qps[1], rk), rn2.evalPolynomialAt(qps[1], rk)} };
+    double tmpFQ[2] = { 0, 0 };
+    if (orientation_ == Orientation::vertical) //поток вдоль оси X
+    {
+        double lmax = std::max(std::max(Qs[0][0].lambdaGLFX(y1), Qs[0][1].lambdaGLFX(y2)),
+            std::max(Qs[1][0].lambdaGLFX(y1), Qs[1][1].lambdaGLFX(y2)));
+        for (auto eq : Equations)
+        {
+            for (int p = 0; p < 2; p++)
+            {
+                tmpFQ[p] = 0.5 * (Qs[p][0].F(eq, y1) + Qs[p][1].F(eq, y2) + lmax * (Qs[p][0](eq) - Qs[p][1](eq))); //GLF2 flux
+            }
+            FQ_[static_cast<int>(eq)] = 0.5 * h * (tmpFQ[0] + tmpFQ[1]); //FQ = flux integral over edge (Gaussian quadrature)
+        }
+    }
+    else  //вдоль оси Y
+    {
+        double lmax = std::max(std::max(Qs[0][0].lambdaGLFY(y1), Qs[0][1].lambdaGLFY(y2)),
+            std::max(Qs[1][0].lambdaGLFY(y1), Qs[1][1].lambdaGLFY(y2)));
+        for (auto eq : Equations)
+        {
+            for (int p = 0; p < 2; p++)
+            {
+                tmpFQ[p] = 0.5 * (Qs[p][0].G(eq, y1) + Qs[p][1].G(eq, y2) + lmax * (Qs[p][1](eq) - Qs[p][0](eq))); //нумерация соседей сверху вниз
+            }
+            FQ_[static_cast<int>(eq)] = 0.5 * h * (tmpFQ[0] + tmpFQ[1]);
+        }
+    }
+}
+
 bool NodeEdge::operator==(const NodeEdge& rhs) //equality overload
 {
     if (n1_ == rhs.n1_ && n2_ == rhs.n2_)

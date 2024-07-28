@@ -137,6 +137,7 @@ const ChildrenTags TreeNode::childrenTags() const //тэги всех детей
 
 const nodeEdgeId TreeNode::edge(Edge e) const { return edges[static_cast<int>(e)]; } //id ребра
 NodeEdge& TreeNode::edgeRef(Edge e) { return forest.edgeRef(edge(e)); } //ссылка на ребро
+double TreeNode::polyCoeff(Equation eq, int p) const { return polyCoeffs[static_cast<int>(eq)][p]; } //коэффициент полинома CWENO
 
 TreeNode& TreeNode::getChildOrSelfByCoords(Point p) //ссылка на ребенка по координатам
 {
@@ -1077,7 +1078,7 @@ void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWEN
             const int nq = static_cast<int>(q);
             for (int p = 0; p < pts; p++)
             {
-                rs(row) = nds[p].Qref(rk)(eq) - rdata.Qref(rk)(eq);
+                rsl[nq](p) = nds[p].Qref(rk)(eq) - rdata.Qref(rk)(eq);
             }
             coeffsl = decompl[nq].solve(rsl[nq]);
             linear_coeffs[nq][0] = coeffsl(0);
@@ -1128,7 +1129,6 @@ void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWEN
         }
     } //eq loop
     return;
-
 }
 
 //inspectors -----------------------
@@ -1268,6 +1268,22 @@ double TreeNode::magGradRho() const //примерный градиент плотности
         }
     }
     return drhosum / n12num / rd.rho();
+}
+
+ConservativeVector TreeNode::evalPolynomialAt(Point p, rkStep rk) //реконструированное полиномом CWENO значение TODO: сделать const
+{
+    ConservativeVector ret;
+    ConservativeVector& rQ = dataRef().Qref(rk);
+    double dx = p.x - box().center().x;
+    double dy = p.y - box().center().y;
+    double h = box().size();
+    for (auto eq : Equations)
+    {
+        ret.set(eq, rQ(eq) + polyCoeff(eq, 0) * dx + polyCoeff(eq, 1) * dy
+            + 0.5 * polyCoeff(eq, 2) * (dx * dx - 1.0 / 12.0 * h * h) + 0.5 * polyCoeff(eq, 3) * (dy * dy - 1.0 / 12.0 * h * h)
+            + polyCoeff(eq, 4) * dx * dy);
+    }
+    return ret;
 }
 
 //output -----------------------

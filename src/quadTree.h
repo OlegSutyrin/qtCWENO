@@ -25,7 +25,8 @@ public:
     //accessors
     treeNodeId id() const;
     int depth() const;
-    const TreeNode& root() const; //ссылка на (const) корневую ноду
+    TreeNode& rootRef(); //ссылка на корневую ноду
+    const TreeNode& rootRefConst() const; //ссылка на (const) корневую ноду
     TreeNode& nodeRef(int depth, treeNodeId id); //ссылка на ноду
     CellData& dataRef(cellDataId id); //ссылка на CellData по id
     CellData data(cellDataId id) const; //копия CellData по id
@@ -41,7 +42,7 @@ public:
 
     //inspectors
     bool isGhost() const; //является ли дерево ghost'ом
-    //bool isGhostCorner() const; //является ли дерево угловым ghost'ом
+    bool isGhostCorner() const; //является ли дерево угловым ghost'ом
     //static bool isTreeGhost(quadTreeId id); //является ли дерево ghost'ом (по id)
 
     //other

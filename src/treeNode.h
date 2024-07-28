@@ -68,6 +68,7 @@ public:
     const ChildrenTags childrenTags() const; //тэги всех детей
     const nodeEdgeId edge(Edge e) const; //id ребра
     NodeEdge& edgeRef(Edge e); //ссылка на ребро
+    double polyCoeff(Equation eq, int p) const; //коэффициент полинома CWENO
 
     TreeNode& getChildOrSelfByCoords(Point p); //ссылка на ребенка (или себя) по координатам
 
@@ -115,6 +116,7 @@ public:
     //other
     static TreeNode& nodeRef(const NodeTag& tag); //ссылка на ноду по тэгу (static - общая функция для всех нод)
     double magGradRho() const; //примерный градиент плотности
+    ConservativeVector evalPolynomialAt(Point p, rkStep rk); //реконструированное полиномом CWENO значение TODO: сделать const
 
     //output
     std::string dump() const; //дамп ноды в строку

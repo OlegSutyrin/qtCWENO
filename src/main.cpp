@@ -121,6 +121,18 @@ static void addGhostLayer() //добавление слоя ghost-деревьев
     return;
 }
 
+bool checkExportTime() //проверка, не пора ли выводить в файл после данного шага по времени
+{
+    double n = 0.0;
+    double f1 = modf(globals.time / config.exportPeriod, &n); //signed дробная часть
+    double f2 = modf((globals.time + globals.dt) / config.exportPeriod, &n);
+    if (f2 < f1) //переход через целое число 
+        return true;
+    else
+        return false;
+}
+
+
 //void printNode(TreeNode node) { cout << node.dump(); }
 //void printTree(QuadTree tree) { cout << tree.dump(); }
 
@@ -173,7 +185,7 @@ int main(int argc, char** argv)
 
 
     //--------------------- цикл по времени -----------------------------
-    const int steps = 20;
+    /*const int steps = 20;
     double dx = config.bubble_axle_x / (double)steps;
     //double dy = config.bubble_axle_y / (double)steps;
     for (int step = 0; step < steps; step++)
@@ -191,7 +203,36 @@ int main(int argc, char** argv)
         forest.meshCoarsenInitial();
         forest.meshRefineInitial();
         ExportForest();
-    }
+    }*/
+    while (globals.time < config.end_time)
+    {
+        globals.dt = forest.CFLTimestepSize(); //TODO: адаптировать под FV + Riemann solver (брать скорости волн оттуда)?
+        //globals.dt = AdjustTimeStepForExport();
+        cout << "Step " << (globals.timestep_number + 1) << ": " << globals.time << " --> " << (globals.time + globals.dt) << " (dt = " << globals.dt << ")";
+        globals.file_output << "Step " << (globals.timestep_number + 1) << ": " << globals.time << " --> " << (globals.time + globals.dt) << " (dt = " << globals.dt << ")";
+
+        forest.advanceTime(); //шаг по времени
+        forest.putQn(config.rk_order); //переброс Qn[rk_order] --> Qn[0] после последнего шага Рунге-Кутты
+        forest.boundaryConditions(0);
+
+        bool to_export = checkExportTime(); //нужно ли будет выводить после этого шага
+        globals.time += globals.dt;
+        globals.timestep_number++;
+
+        if (!config.meshRefineAll && globals.timestep_number % config.meshRefinePeriod == 0)
+        {
+            forest.meshUpdate(); //TODO: разобраться, нужно ли делать перерасчет средних значений в соседних ячейках (Semplice2015, p.14)
+            cout << " (remeshed to " << forest.activeNodesNumber() << " nodes, " << forest.leavesNumber() << " leaves)";
+            globals.file_output << " (remeshed to " << forest.activeNodesNumber() << " nodes, " << forest.leavesNumber() << " leaves)";
+            //ExportForest();
+        }
+        cout << endl;
+        globals.file_output << endl;
+
+        if (true || to_export)
+            ExportForest();
+    } //конец цикла по времени
+
 
     auto chrono_duration = std::chrono::steady_clock::now() - chrono_start;
     int duration_seconds = (int)round(std::chrono::duration<double, std::milli>(chrono_duration).count() / 1000);
