@@ -104,6 +104,7 @@ public:
     //inspectors
     bool isDeleted() const;
     bool isLeaf() const;
+    bool isGhost() const; //принадлежит ли к ghost-дереву
     bool hasChildren() const; //есть ли дети
     bool hasGrandChildren() const; //есть ли внуки
     bool hasGrandChildren(Neighbour n) const; //есть ли внуки с определенной стороны

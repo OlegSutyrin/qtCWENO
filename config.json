@@ -34,7 +34,7 @@
   "finish time": 0.6, //конечное физическое время расчета
   "export": { //параметры вывода в файл
     "period": 0.05, //период вывода в файл, физическое время
-    "scatter": false, //scatter (ASCII)
+    "scatter": true, //scatter (ASCII)
     "neighbours": false, //соседи (ASCII)
     "neighbours12": false, //соседи с учетом диагональных и разделения ребер (ASCII)
     "edges": false, //ребра (ASCII)

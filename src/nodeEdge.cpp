@@ -58,9 +58,171 @@ void NodeEdge::computeFluxLF(rkStep rk) //расчет потока (Lax-Friedrich flux)
         y1 = rn1.box().center().y;
         y2 = rn2.box().center().y;
     }
+    
     //реконструированные данные соседей в точках квадратуры, [точка][сосед]
-    ConservativeVector Qs[2][2] = { {rn1.evalPolynomialAt(qps[0], rk), rn2.evalPolynomialAt(qps[0], rk)},
-        {rn1.evalPolynomialAt(qps[1], rk), rn2.evalPolynomialAt(qps[1], rk)} };
+    ConservativeVector Qs[2][2]{};
+    CellData gdata{}; //ghost-данные дл€ граничных условий
+    double gpсfs[EQ_NUM][POLY_COEFF_NUM]; //коэффициенты параболоида ghost-€чейки
+    Point gcenter{};
+    if (rn1.isGhost()) //перва€ соседн€€ €чейка - ghost
+    {
+        Qs[0][1] = rn2.evalPolynomialAt(qps[0], rk); //rn2 жива€
+        Qs[1][1] = rn2.evalPolynomialAt(qps[1], rk);
+        //копи€ нужных данных rn2
+        gdata = rn2.data();
+        ConservativeVector& gQ = gdata.Qref(rk);
+        for (auto eq : Equations)
+            for (int i = 0; i < POLY_COEFF_NUM; i++)
+                gpсfs[static_cast<int>(eq)][i] = rn2.polyCoeff(eq, i);
+        double h = rn2.box().size();
+        if(orientation_ == Orientation::vertical) //ghost-€чейка слева
+        { 
+            gcenter.x = rn2.box().center().x - h;
+            gcenter.y = rn2.box().center().y;
+            if (config.boundary_conditions[static_cast<int>(Directions::left)] == BCType::wall) //непротекание
+            {
+                gQ.flipVelocity(Orientation::horizontal); //изменение знака скорости вдоль оси x
+                gpсfs[static_cast<int>(Equation::momentum_x)][0] *= -1; //px = -px, помен€етс€ еще раз ниже
+                gpсfs[static_cast<int>(Equation::momentum_x)][2] *= -1; //pxx = -pxx
+                gpсfs[static_cast<int>(Equation::momentum_x)][3] *= -1; //pxy = -pxy, помен€етс€ еще раз ниже
+                for (auto eq : Equations) //отражение всех величин относительно вертикальной оси
+                {
+                    gpсfs[static_cast<int>(eq)][0] *= -1; //px = -px
+                    gpсfs[static_cast<int>(eq)][3] *= -1; //pxy = -pxy
+                }
+            }
+            else //d/dx=0
+            {
+                for (auto eq : Equations)
+                {
+                    gpсfs[static_cast<int>(eq)][0] = 0; //px = 0
+                    gpсfs[static_cast<int>(eq)][2] = 0; //pxx = 0
+                    gpсfs[static_cast<int>(eq)][3] = 0; //pxy = 0
+                }
+            }
+        }
+        else //ghost-€чейка сверху
+        {
+            gcenter.x = rn2.box().center().x;
+            gcenter.y = rn2.box().center().y + h;
+            if (config.boundary_conditions[static_cast<int>(Directions::up)] == BCType::wall) //непротекание
+            {
+                gQ.flipVelocity(Orientation::vertical); //изменение знака скорости вдоль оси y
+                gpсfs[static_cast<int>(Equation::momentum_y)][1] *= -1; //py = -py, помен€етс€ еще раз ниже
+                gpсfs[static_cast<int>(Equation::momentum_y)][3] *= -1; //pxy = -pxy, помен€етс€ еще раз ниже
+                gpсfs[static_cast<int>(Equation::momentum_y)][4] *= -1; //pyy = -pyy
+                for (auto eq : Equations) //отражение всех величин относительно горизонтальной оси
+                {
+                    gpсfs[static_cast<int>(eq)][1] *= -1; //py = -py
+                    gpсfs[static_cast<int>(eq)][3] *= -1; //pxy = -pxy
+                }
+            }
+            else //d/dy=0
+            {
+                for (auto eq : Equations)
+                {
+                    gpсfs[static_cast<int>(eq)][1] = 0; //py = 0
+                    gpсfs[static_cast<int>(eq)][3] = 0; //pxy = 0
+                    gpсfs[static_cast<int>(eq)][4] = 0; //pyy = 0
+                }
+            }
+        }
+        for (int p = 0; p < 2; p++) //цикл по точкам квадратуры
+        {
+            double dx = qps[p].x - gcenter.x;
+            double dy = qps[p].y - gcenter.y;
+            for (auto eq : Equations)
+            {
+                Qs[p][0].set(eq, gQ(eq) + gpсfs[static_cast<int>(eq)][0] * dx + gpсfs[static_cast<int>(eq)][1] * dy
+                    + 0.5 * gpсfs[static_cast<int>(eq)][2] * (dx * dx - 1.0 / 12.0 * h * h) + 0.5 * gpсfs[static_cast<int>(eq)][3] * (dy * dy - 1.0 / 12.0 * h * h)
+                    + gpсfs[static_cast<int>(eq)][4] * dx * dy);
+            }
+        }
+    }
+    else if (rn2.isGhost()) //втора€ соседн€€ €чейка - ghost
+    {
+        Qs[0][0] = rn1.evalPolynomialAt(qps[0], rk); //rn1 жива€
+        Qs[1][0] = rn1.evalPolynomialAt(qps[1], rk);
+        //копи€ нужных данных rn1
+        gdata = rn1.data();
+        ConservativeVector& gQ = gdata.Qref(rk);
+        for (auto eq : Equations)
+            for (int i = 0; i < POLY_COEFF_NUM; i++)
+                gpсfs[static_cast<int>(eq)][i] = rn1.polyCoeff(eq, i);
+        double h = rn1.box().size();
+        if (orientation_ == Orientation::vertical) //ghost-€чейка справа
+        {
+            gcenter.x = rn1.box().center().x + h;
+            gcenter.y = rn1.box().center().y;
+            if (config.boundary_conditions[static_cast<int>(Directions::right)] == BCType::wall) //непротекание
+            {
+                gQ.flipVelocity(Orientation::horizontal); //изменение знака скорости вдоль оси x
+                gpсfs[static_cast<int>(Equation::momentum_x)][0] *= -1; //px = -px, помен€етс€ еще раз ниже
+                gpсfs[static_cast<int>(Equation::momentum_x)][2] *= -1; //pxx = -pxx
+                gpсfs[static_cast<int>(Equation::momentum_x)][3] *= -1; //pxy = -pxy, помен€етс€ еще раз ниже
+                for (auto eq : Equations) //отражение всех величин относительно вертикальной оси
+                {
+                    gpсfs[static_cast<int>(eq)][0] *= -1; //px = -px
+                    gpсfs[static_cast<int>(eq)][3] *= -1; //pxy = -pxy
+                }
+            }
+            else //d/dx=0
+            {
+                for (auto eq : Equations)
+                {
+                    gpсfs[static_cast<int>(eq)][0] = 0; //px = 0
+                    gpсfs[static_cast<int>(eq)][2] = 0; //pxx = 0
+                    gpсfs[static_cast<int>(eq)][3] = 0; //pxy = 0
+                }
+            }
+        }
+        else //ghost-€чейка снизу
+        {
+            gcenter.x = rn1.box().center().x;
+            gcenter.y = rn1.box().center().y - h;
+            if (config.boundary_conditions[static_cast<int>(Directions::down)] == BCType::wall) //непротекание
+            {
+                gQ.flipVelocity(Orientation::vertical); //изменение знака скорости вдоль оси y
+                gpсfs[static_cast<int>(Equation::momentum_y)][1] *= -1; //py = -py, помен€етс€ еще раз ниже
+                gpсfs[static_cast<int>(Equation::momentum_y)][3] *= -1; //pxy = -pxy, помен€етс€ еще раз ниже
+                gpсfs[static_cast<int>(Equation::momentum_y)][4] *= -1; //pyy = -pyy
+                for (auto eq : Equations) //отражение всех величин относительно горизонтальной оси
+                {
+                    gpсfs[static_cast<int>(eq)][1] *= -1; //py = -py
+                    gpсfs[static_cast<int>(eq)][3] *= -1; //pxy = -pxy
+                }
+            }
+            else //d/dy=0
+            {
+                for (auto eq : Equations)
+                {
+                    gpсfs[static_cast<int>(eq)][1] = 0; //py = 0
+                    gpсfs[static_cast<int>(eq)][3] = 0; //pxy = 0
+                    gpсfs[static_cast<int>(eq)][4] = 0; //pyy = 0
+                }
+            }
+        }
+        for (int p = 0; p < 2; p++) //цикл по точкам квадратуры
+        {
+            double dx = qps[p].x - gcenter.x;
+            double dy = qps[p].y - gcenter.y;
+            for (auto eq : Equations)
+            {
+                Qs[p][1].set(eq, gQ(eq) + gpсfs[static_cast<int>(eq)][0] * dx + gpсfs[static_cast<int>(eq)][1] * dy
+                    + 0.5 * gpсfs[static_cast<int>(eq)][2] * (dx * dx - 1.0 / 12.0 * h * h) + 0.5 * gpсfs[static_cast<int>(eq)][3] * (dy * dy - 1.0 / 12.0 * h * h)
+                    + gpсfs[static_cast<int>(eq)][4] * dx * dy);
+            }
+        }
+    }
+    else //обе соседние €чейки живые
+    {
+        Qs[0][0] = rn1.evalPolynomialAt(qps[0], rk);
+        Qs[0][1] = rn2.evalPolynomialAt(qps[0], rk);
+        Qs[1][0] = rn1.evalPolynomialAt(qps[1], rk);
+        Qs[1][1] = rn2.evalPolynomialAt(qps[1], rk);
+    }
+    //ConservativeVector Qs[2][2] = { {rn1.evalPolynomialAt(qps[0], rk), rn2.evalPolynomialAt(qps[0], rk)},
+        //{rn1.evalPolynomialAt(qps[1], rk), rn2.evalPolynomialAt(qps[1], rk)} };
     double tmpFQ[2] = { 0, 0 };
     if (orientation_ == Orientation::vertical) //поток вдоль оси X
     {

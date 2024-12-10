@@ -292,79 +292,80 @@ void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
             cout << "Refining all, level " << depth << ": " << forest.leavesNumber();
             for (auto& rtree : trees) //проход по всем деревьям по ссылке
             {
-                if (rtree.isGhost()) //пропуск ghost-деревьев
-                    continue;
+                //if (rtree.isGhost()) //пропуск ghost-деревьев
+                    //continue;
                 for (auto& rnode : rtree.nodes[depth])
                     rnode.refine();
             }
             cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
         }
-        return;
     }
-    //дробление по геометрии начальных данных
-    for (auto depth = 1; depth < config.max_depth; depth++)
+    else //дробление по геометрии начальных данных
     {
-        cout << "Refining level " << depth << ": " << forest.leavesNumber();
-        for (auto& tree : trees) //проход по всем деревьям по ссылке
+        for (auto depth = 1; depth < config.max_depth; depth++)
         {
-            if (tree.isGhost()) //пропуск ghost-деревьев
-                continue;
-            if (depth <= tree.depth()) //есть ячейки этого уровня
+            cout << "Refining level " << depth << ": " << forest.leavesNumber();
+            for (auto& tree : trees) //проход по всем деревьям по ссылке
             {
-                for (auto& rnode : tree.nodes[depth]) //проход по всем нодам на уровне
+                if (tree.isGhost()) //пропуск ghost-деревьев
+                    continue;
+                if (depth <= tree.depth()) //есть ячейки этого уровня
                 {
-                    bool to_refine = false;
-
-                    //около УВ
-                    if (rnode.box().intersectLineStraight(config.shock_position_x, Orientation::vertical) ||
-                        rnode.box().bottom_left().isCloseToStraightLine(config.shock_position_x, Orientation::vertical) ||
-                        rnode.box().bottom_right().isCloseToStraightLine(config.shock_position_x, Orientation::vertical))
+                    for (auto& rnode : tree.nodes[depth]) //проход по всем нодам на уровне
                     {
-                        to_refine = true;
-                    }
+                        bool to_refine = false;
 
-                    //около границ слоя
-                    if (config.problem == "layer")
-                    {
-                        //правая граница
-                        if (rnode.box().top_left().y >= config.layer_bottom - config.meshInitialRefinePadding &&
-                            rnode.box().bottom_left().y <= config.layer_top + config.meshInitialRefinePadding &&
-                            (rnode.box().intersectLineStraight(config.layer_right, Orientation::vertical) ||
-                                rnode.box().bottom_left().isCloseToStraightLine(config.layer_right, Orientation::vertical) ||
-                                rnode.box().top_right().isCloseToStraightLine(config.layer_right, Orientation::vertical)))
+                        //около УВ
+                        if (rnode.box().intersectLineStraight(config.shock_position_x, Orientation::vertical) ||
+                            rnode.box().bottom_left().isCloseToStraightLine(config.shock_position_x, Orientation::vertical) ||
+                            rnode.box().bottom_right().isCloseToStraightLine(config.shock_position_x, Orientation::vertical))
                         {
                             to_refine = true;
                         }
 
-                        //нижняя и верхняя границы
-                        if (rnode.box().bottom_left().x <= config.layer_right + config.meshInitialRefinePadding &&
-                            (rnode.box().intersectLineStraight(config.layer_bottom, Orientation::horizontal) ||
-                                rnode.box().bottom_left().isCloseToStraightLine(config.layer_bottom, Orientation::horizontal) ||
-                                rnode.box().top_right().isCloseToStraightLine(config.layer_bottom, Orientation::horizontal) ||
-                                rnode.box().intersectLineStraight(config.layer_top, Orientation::horizontal) ||
-                                rnode.box().bottom_left().isCloseToStraightLine(config.layer_top, Orientation::horizontal) ||
-                                rnode.box().top_right().isCloseToStraightLine(config.layer_top, Orientation::horizontal)))
+                        //около границ слоя
+                        if (config.problem == "layer")
                         {
-                            to_refine = true;
+                            //правая граница
+                            if (rnode.box().top_left().y >= config.layer_bottom - config.meshInitialRefinePadding &&
+                                rnode.box().bottom_left().y <= config.layer_top + config.meshInitialRefinePadding &&
+                                (rnode.box().intersectLineStraight(config.layer_right, Orientation::vertical) ||
+                                    rnode.box().bottom_left().isCloseToStraightLine(config.layer_right, Orientation::vertical) ||
+                                    rnode.box().top_right().isCloseToStraightLine(config.layer_right, Orientation::vertical)))
+                            {
+                                to_refine = true;
+                            }
+
+                            //нижняя и верхняя границы
+                            if (rnode.box().bottom_left().x <= config.layer_right + config.meshInitialRefinePadding &&
+                                (rnode.box().intersectLineStraight(config.layer_bottom, Orientation::horizontal) ||
+                                    rnode.box().bottom_left().isCloseToStraightLine(config.layer_bottom, Orientation::horizontal) ||
+                                    rnode.box().top_right().isCloseToStraightLine(config.layer_bottom, Orientation::horizontal) ||
+                                    rnode.box().intersectLineStraight(config.layer_top, Orientation::horizontal) ||
+                                    rnode.box().bottom_left().isCloseToStraightLine(config.layer_top, Orientation::horizontal) ||
+                                    rnode.box().top_right().isCloseToStraightLine(config.layer_top, Orientation::horizontal)))
+                            {
+                                to_refine = true;
+                            }
                         }
-                    }
 
-                    //около границы пузыря
-                    if (config.problem == "bubble")
-                    {
-                        if (rnode.box().intersectLineEllipse(config.bubble_axle_x, config.bubble_axle_y))
-                            to_refine = true;
-                    }
+                        //около границы пузыря
+                        if (config.problem == "bubble")
+                        {
+                            if (rnode.box().intersectLineEllipse(config.bubble_axle_x, config.bubble_axle_y))
+                                to_refine = true;
+                        }
 
-                    //пометка к разделению
-                    if (to_refine)
-                        rnode.markToRefine();
+                        //пометка к разделению
+                        if (to_refine)
+                            rnode.markToRefine();
+                    }
                 }
             }
+            //дробление и балансировка
+            meshApplyRefineList();
+            cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
         }
-        //дробление и балансировка
-        meshApplyRefineList();
-        cout << " ---> " << forest.leavesNumber() << " leaves" << endl;
     }
     computeQuadraturePoints(); //расчет точек квадратуры в ребрах
     updateEigenObjects(); //перерасчет матриц Eigen в ячейках
@@ -625,6 +626,8 @@ void QuadTreeForest::computePolynomialCoeffs(rkStep rk) //вычисление коэффициент
     //for (auto& rtree : trees)
     for (int id = 0; id < trees_total; id++)
     {
+        //if (trees[id].isGhost()) //пропуск ghost-деревьев 
+            //continue;
         //for (auto& rlevel : rtree.nodes)
         for (auto& rlevel : trees[id].nodes)
         {

@@ -1029,7 +1029,7 @@ void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWEN
     {
         for (auto eq : Equations)
             for (int i = 0; i < POLY_COEFF_NUM; i++)
-                polyCoeffs[static_cast<int>(eq)][i] = 0.0;
+                polyCoeffs[static_cast<int>(eq)][i] = 0.0; //нулевые коэффициенты для вывода в файл
         return;
     }
 
@@ -1037,7 +1037,7 @@ void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWEN
     auto& rdata = dataRef();
 
     double Popt_coeffs[POLY_COEFF_NUM]{}; //коэффициенты для оптимального (осциллирующего) полинома
-    Quadrant cq = static_cast<Quadrant>(tag().id() % QUADRANTS_NUM); //квадрант текущей ноды среди прочих siblings
+    //Quadrant cq = static_cast<Quadrant>(tag().id() % QUADRANTS_NUM); //квадрант текущей ноды среди прочих siblings 
     for (auto eq : Equations)
     {
         //оптимальный полином
@@ -1048,6 +1048,10 @@ void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWEN
             {
                 auto& rnnode = nodeRef(rn12tag);
                 auto& rndata = rnnode.dataRef();
+                //if (rs.size() < 1)
+                //{
+                    //cout << tag() << ": size(rs) = " << rs.size() << ": size(J) = " << J.size() << ", hasChildren = " << hasChildren() << endl;
+                //}
                 rs(row) = rndata.Qref(rk)(eq) - rdata.Qref(rk)(eq);
                 row++;
             }
@@ -1134,6 +1138,7 @@ void TreeNode::calcPolynomialCWENO(rkStep rk) //вычисление коэффициентов 2D CWEN
 //inspectors -----------------------
 bool TreeNode::isDeleted() const { return is_deleted; }
 bool TreeNode::isLeaf() const { return is_leaf; }
+bool TreeNode::isGhost() const { return forest.treeRef(tag_.tree()).isGhost(); } //принадлежит ли к ghost-дереву
 bool TreeNode::hasChildren() const { return childrenId_ != null; } //есть ли дети
 bool TreeNode::hasGrandChildren() const { return has_grandchildren; } //есть ли внуки
 bool TreeNode::hasGrandChildren(Neighbour n) const //есть ли внуки с определенной стороны
@@ -1280,8 +1285,7 @@ ConservativeVector TreeNode::evalPolynomialAt(Point p, rkStep rk) //реконструиро
     for (auto eq : Equations)
     {
         ret.set(eq, rQ(eq) + polyCoeff(eq, 0) * dx + polyCoeff(eq, 1) * dy
-            + 0.5 * polyCoeff(eq, 2) * (dx * dx - 1.0 / 12.0 * h * h) + 0.5 * polyCoeff(eq, 3) * (dy * dy - 1.0 / 12.0 * h * h)
-            + polyCoeff(eq, 4) * dx * dy);
+            + 0.5 * polyCoeff(eq, 2) * (dx * dx - 1.0 / 12.0 * h * h) + polyCoeff(eq, 3) * dx * dy + 0.5 * polyCoeff(eq, 4) * (dy * dy - 1.0 / 12.0 * h * h));
     }
     return ret;
 }
