@@ -134,8 +134,7 @@ void NodeEdge::computeFluxLF(rkStep rk) //ðàñ÷åò ïîòîêà (Lax-Friedrich flux)
             for (auto eq : Equations)
             {
                 Qs[p][0].set(eq, gQ(eq) + gpñfs[static_cast<int>(eq)][0] * dx + gpñfs[static_cast<int>(eq)][1] * dy
-                    + 0.5 * gpñfs[static_cast<int>(eq)][2] * (dx * dx - 1.0 / 12.0 * h * h) + 0.5 * gpñfs[static_cast<int>(eq)][3] * (dy * dy - 1.0 / 12.0 * h * h)
-                    + gpñfs[static_cast<int>(eq)][4] * dx * dy);
+                    + 0.5 * gpñfs[static_cast<int>(eq)][2] * (dx * dx - 1.0 / 12.0 * h * h) + gpñfs[static_cast<int>(eq)][3] * dx * dy + 0.5 * gpñfs[static_cast<int>(eq)][4] * (dy * dy - 1.0 / 12.0 * h * h));
             }
         }
     }
@@ -209,8 +208,7 @@ void NodeEdge::computeFluxLF(rkStep rk) //ðàñ÷åò ïîòîêà (Lax-Friedrich flux)
             for (auto eq : Equations)
             {
                 Qs[p][1].set(eq, gQ(eq) + gpñfs[static_cast<int>(eq)][0] * dx + gpñfs[static_cast<int>(eq)][1] * dy
-                    + 0.5 * gpñfs[static_cast<int>(eq)][2] * (dx * dx - 1.0 / 12.0 * h * h) + 0.5 * gpñfs[static_cast<int>(eq)][3] * (dy * dy - 1.0 / 12.0 * h * h)
-                    + gpñfs[static_cast<int>(eq)][4] * dx * dy);
+                    + 0.5 * gpñfs[static_cast<int>(eq)][2] * (dx * dx - 1.0 / 12.0 * h * h) + gpñfs[static_cast<int>(eq)][3] * dx * dy + 0.5 * gpñfs[static_cast<int>(eq)][4] * (dy * dy - 1.0 / 12.0 * h * h));
             }
         }
     }

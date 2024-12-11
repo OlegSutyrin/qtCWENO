@@ -242,7 +242,7 @@ $!ThreeDAxis
 $!PlotType  = Cartesian2D
 $!FrameName  = 'Frame 001'
 $!GlobalTime 
-  SolutionTime = 0
+  SolutionTime = 0.550330365930009391
 $!ActiveFieldMaps  =  [1]
 $!GlobalRGB 
   RedChannelVar = 3
