@@ -25,13 +25,15 @@ public:
     int max_depth = 0; //макс глубина деревьев
     CellBox global_box; //глобальная область расчета
 
-    std::string problem = "layer"; //тип течения
+    FlowType problem = FlowType::bubble; //тип течения
     double shock_position_x = 0.0; //положение исходного скачка по оси x
     double layer_right = 0.0; //границы слоя
     double layer_bottom = -999.0;
     double layer_top = 0.0;
     double bubble_axle_x = 0.2; //полуоси пузыря
     double bubble_axle_y = 0.2;
+    double wedge_angle_bottom = 0.0; //грани клина
+    double wedge_angle_top = 90.0;
     double gamma = 1.4; //показатель адиабаты
     double Mach = 1.0; //число Маха исходного скачка
     double Atwood = 0.0; //число Атвуда газа внутри слоя/пузыря

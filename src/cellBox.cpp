@@ -4,7 +4,7 @@
 #include "CellBox.h"
 
 //------------------------------------------------------------------- Point -------------------------------------------------------------------
-bool Point::isCloseToStraightLine(double line_coord, Orientation ori) const //лежит ли точка внутри полосы шириной 2*(refine padding) около прямой линии
+bool Point::isCloseToStraightLine(double line_coord, Orientation ori) const //лежит ли точка внутри полосы шириной 2*(refine padding) около кардинальной линии
 {
     if (ori == Orientation::horizontal)
     {
@@ -18,6 +18,15 @@ bool Point::isCloseToStraightLine(double line_coord, Orientation ori) const //ле
     }
     return false;
 }
+bool Point::isInsideWedge(double angle_bottom, double angle_top) //попадает ли точка нутрь клина, углы в градусах
+{
+    double phi = atan2(y, x) * 180.0/M_PI;
+    if (phi > angle_bottom && phi < angle_top)
+        return true;
+    else
+        return false;
+}
+
 std::ostream& operator<<(std::ostream& os, const Point& p) //output overload
 {
     os << "(" << p.x << ", " << p.y << ")";
@@ -92,6 +101,20 @@ bool CellBox::intersectLineStraight(double line_coord, Orientation ori) const //
     {
         if ((bottom_left().x - line_coord) * (top_right().x - line_coord) < 0)
             return true;
+    }
+    return false;
+}
+
+static inline double lsfLine(Point p, double k, double b) //level-set function for y = kx+b
+{
+    return p.y - k * p.x - b;
+}
+bool CellBox::intersectLineSlanted(double k, double b) const //пересекает ли ячейку прямая линия с уравнением kx+b
+{
+    if (lsfLine(bottom_left(), k, b) * lsfLine(top_right(), k, b) < 0 ||
+        lsfLine(top_left(), k, b) * lsfLine(bottom_right(), k, b) < 0)
+    {
+        return true;
     }
     return false;
 }

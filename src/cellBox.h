@@ -5,7 +5,9 @@
 struct Point
 {
     double x, y;
-    bool isCloseToStraightLine(double line_coord, Orientation ori) const; //лежит ли точка внутри полосы шириной 2*(refine padding) около прямой линии
+    bool isCloseToStraightLine(double line_coord, Orientation ori) const; //лежит ли точка внутри полосы шириной 2*(refine padding) около кардинальной линии
+    bool isInsideWedge(double angle_bottom, double angle_top); //попадает ли точка нутрь клина, углы в градусах
+
     friend std::ostream& operator<<(std::ostream& os, const Point& p); //output overload
 };
 Point middle(Point const& p1, Point const& p2); //середина отрезка между точками
@@ -34,6 +36,7 @@ public:
     void updateCenter(); //вычисление центра по угловым точкам
     bool isPointInside(Point p) const; //попадает ли точка в box
     bool intersectLineStraight(double line_coord, Orientation ori) const; //пересекает ли ячейку прямая линия (горизонтальная или вертикальная)
+    bool intersectLineSlanted(double k, double b) const; //пересекает ли ячейку прямая линия с уравнением kx+b
     bool intersectLineEllipse(double axle_x, double axle_y) const; //пересекает ли ячейку эллипс
     CellBox quarterBox(Quadrant q); //получение четвертинки box'а
 };

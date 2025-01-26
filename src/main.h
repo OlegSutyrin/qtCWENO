@@ -10,6 +10,8 @@
 using std::cout;
 using std::endl;
 
+const double M_PI = 3.14159265358979323846;
+
 using quadTreeId = size_t; //TODO: заменить на "enum class quadTreeId : size_t {}", но найти способ избежать множества static_cast'ов
 using treeNodeId = size_t; //(в массивах можно через overload []?)
 using cellDataId = size_t;
@@ -70,6 +72,11 @@ enum class FluxType { //методы вычисления потоков на ребрах
     LF, //Lax-Friedrich
     Riemann_exact, //exact Riemann solver
     HLLC //HLLC Riemann solver
+};
+enum class FlowType { //типы задач
+    layer,
+    bubble,
+    wedge
 };
 
 //преобразования enum class'ов

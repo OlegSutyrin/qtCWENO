@@ -324,7 +324,7 @@ void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
                         }
 
                         //около границ слоя
-                        if (config.problem == "layer")
+                        if (config.problem == FlowType::layer)
                         {
                             //правая граница
                             if (rnode.box().top_left().y >= config.layer_bottom - config.meshInitialRefinePadding &&
@@ -350,12 +350,22 @@ void QuadTreeForest::meshRefineInitial() //начальное дробление сетки
                         }
 
                         //около границы пузыря
-                        if (config.problem == "bubble")
+                        if (config.problem == FlowType::bubble)
                         {
                             if (rnode.box().intersectLineEllipse(config.bubble_axle_x, config.bubble_axle_y))
                                 to_refine = true;
                         }
 
+                        //около границ клина
+                        if (config.problem == FlowType::wedge)
+                        {
+                            double b1 = 0.0, b2 = 0.0;
+                            double k1 = tan(config.wedge_angle_bottom * M_PI / 180.0);
+                            double k2 = tan(config.wedge_angle_top * M_PI / 180.0);
+                            if (rnode.box().center().x > config.shock_position_x &&
+                                (rnode.box().intersectLineSlanted(k1, b1) || rnode.box().intersectLineSlanted(k2, b2)))
+                                to_refine = true;
+                        }
                         //пометка к разделению
                         if (to_refine)
                             rnode.markToRefine();
@@ -389,7 +399,7 @@ void QuadTreeForest::meshCoarsenInitial() //начальное склеивание сетки (для тест
                     if (!rnode.isDeleted() && rnode.hasChildren())
                     {
                         //около границы пузыря
-                        if (config.problem == "bubble")
+                        if (config.problem == FlowType::bubble)
                         {
                             if (!rnode.box().intersectLineEllipse(config.bubble_axle_x, config.bubble_axle_y))
                                 rnode.coarsen();
@@ -517,12 +527,11 @@ void QuadTreeForest::initialCondition() //начальные условия
                 {
                     if (rnode.hasChildren()) //не-листья пропускаются
                         continue;
-                    double x = rnode.box().center().x;
-                    double y = rnode.box().center().y;
+                    Point p = rnode.box().center();
                     ConservativeVector Q = {};
-                    if (config.problem == "layer")
+                    if (config.problem == FlowType::layer)
                     {
-                        if (x >= double_shock_x_position)
+                        if (p.x >= double_shock_x_position)
                         {
                             Q.set(Equation::density, r1);
                             Q.set(Equation::momentum_x, r1 * u1);
@@ -531,7 +540,7 @@ void QuadTreeForest::initialCondition() //начальные условия
                         }
                         else
                         {
-                            if (x <= double_layer_x_right && y >= double_layer_y_bottom && y <= double_layer_y_top)
+                            if (p.x <= double_layer_x_right && p.y >= double_layer_y_bottom && p.y <= double_layer_y_top)
                                 Q.set(Equation::density, omega * r0);
                             else
                                 Q.set(Equation::density, r0);
@@ -540,9 +549,9 @@ void QuadTreeForest::initialCondition() //начальные условия
                             Q.set(Equation::energy, p0 / (config.gamma - 1.0) + 0.5 * Q(Equation::density) * (u0 * u0)); //v = 0
                         }
                     }
-                    else if (config.problem == "bubble")
+                    else if (config.problem == FlowType::bubble)
                     {
-                        if (x <= double_shock_x_position)
+                        if (p.x <= double_shock_x_position)
                         {
                             Q.set(Equation::density, r1);
                             Q.set(Equation::momentum_x, r1 * (u0 - u1));
@@ -551,7 +560,27 @@ void QuadTreeForest::initialCondition() //начальные условия
                         }
                         else
                         {
-                            if (x * x / config.bubble_axle_x / config.bubble_axle_x + y * y / config.bubble_axle_y / config.bubble_axle_y <= 1.0)
+                            if (p.x * p.x / config.bubble_axle_x / config.bubble_axle_x + p.y * p.y / config.bubble_axle_y / config.bubble_axle_y <= 1.0)
+                                Q.set(Equation::density, omega * r0);
+                            else
+                                Q.set(Equation::density, r0);
+                            Q.set(Equation::momentum_x, 0); //u = 0
+                            Q.set(Equation::momentum_y, 0); //v = 0
+                            Q.set(Equation::energy, p0 / (config.gamma - 1.0)); //u,v = 0
+                        }
+                    }
+                    else if (config.problem == FlowType::wedge)
+                    {
+                        if (p.x <= double_shock_x_position)
+                        {
+                            Q.set(Equation::density, r1);
+                            Q.set(Equation::momentum_x, r1 * (u0 - u1));
+                            Q.set(Equation::momentum_y, 0);  //v = 0
+                            Q.set(Equation::energy, p1 / (config.gamma - 1.0) + 0.5 * r1 * (u0 - u1) * (u0 - u1)); //v = 0
+                        }
+                        else
+                        {
+                            if (p.isInsideWedge(config.wedge_angle_bottom, config.wedge_angle_top))
                                 Q.set(Equation::density, omega * r0);
                             else
                                 Q.set(Equation::density, r0);
@@ -565,10 +594,10 @@ void QuadTreeForest::initialCondition() //начальные условия
                     //умножение на r для осесимметричных координат
                     if (config.coord_type == CoordType::axisymmetric)
                     {
-                        rd.setY(y);
+                        rd.setY(p.y);
                         for (auto eq : Equations)
                         {
-                            Q.set(eq, Q(eq) * y);
+                            Q.set(eq, Q(eq) * p.y);
                         }
                     }
                     //cout << "(" << x << ", " << y << "): " << Q << endl;
